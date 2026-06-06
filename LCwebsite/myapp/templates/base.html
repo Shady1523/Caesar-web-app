@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pizza Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen font-sans flex flex-col">
+
+    <nav class="bg-slate-900 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0 flex items-center">
+                    <span class="font-black text-xl tracking-wider text-orange-500">🍕 LC<span class="text-white">DATA</span></span>
+                </div>
+                
+                <div class="flex space-x-4">
+                    <a href="{% url 'database' %}" 
+                       class="px-3 py-2 rounded-md text-sm font-medium transition 
+                       {% if request.resolver_match.url_name == 'database' %} bg-orange-500 text-white {% else %} text-slate-300 hover:bg-slate-700 hover:text-white {% endif %}">
+                        LC Database
+                    </a>
+                    
+                    <a href="{% url 'index' %}" 
+                       class="px-3 py-2 rounded-md text-sm font-medium transition 
+                       {% if request.resolver_match.url_name == 'index' %} bg-orange-500 text-white {% else %} text-slate-300 hover:bg-slate-700 hover:text-white {% endif %}">
+                        Run Scraper
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow p-6 md:p-10 flex flex-col items-center w-full">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer class="bg-slate-200 text-center py-4 text-slate-500 text-sm mt-auto">
+        &copy; 2026 LC Analytics. Built with Django & Playwright.
+    </footer>
+
+</body>
+</html>

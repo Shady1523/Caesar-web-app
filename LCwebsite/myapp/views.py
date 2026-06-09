@@ -72,14 +72,19 @@ def home_page_view(request):
     return render(request, "django_app/index.html", context)
 
 def api_view(request):
-    selected_location = request.GET.get('location')
+    location_input = request.GET.get('location')
     max_price_input = request.GET.get('max_price')
+    max_cal_input = request.GET.get('max_cal')
+    item_name_input = request.GET.get('item_name')
     
     max_price = float(max_price_input) if max_price_input else None
+    max_cal = float(max_cal_input) if max_cal_input else None
 
     filtered_entries = query_manager.advanced_store_search(
-        location=selected_location, 
-        max_price=max_price
+        location=location_input, 
+        max_price=max_price,
+        max_cal=max_cal,
+        item_name=item_name_input
     )
 
     data_list = list(filtered_entries.values(
@@ -94,8 +99,10 @@ def api_view(request):
         "status": "success",
         "count": len(data_list),
         "filters_applied": {
-            "location": selected_location,
-            "max_price": max_price
+            "location": location_input,
+            "max_price": max_price,
+            "max_cal": max_cal,
+            "item_name":item_name_input
         },
         "results": data_list
     })

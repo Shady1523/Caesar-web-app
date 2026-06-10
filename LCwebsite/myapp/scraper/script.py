@@ -8,6 +8,8 @@ import logging
 from logging.handlers import RotatingFileHandler
 from asgiref.sync import sync_to_async
 
+NUM_STORES_TO_SCRAPE = 5
+
 logger = logging.getLogger(__name__)
 def logging_setup():
     file_handler = RotatingFileHandler(
@@ -69,7 +71,7 @@ async def extract_product_prices(page, zip_code, address):
             clean_cal = float(cal.split()[0])
             store_name = zip_code + " | " + address
 
-            await sync_to_async(ScrapedStore.objects.create)(
+            await ScrapedStore.objects.acreate(
                 zip_and_address = store_name,
                 item_name = name,
                 item_price = clean_price,
@@ -158,10 +160,10 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
             await page.get_by_text(zip_code).click()
             await asyncio.sleep(timeout_slow())
 
-            stores_to_scrape = await url_scraper(page, 5)
+            stores_to_scrape = await url_scraper(page, NUM_STORES_TO_SCRAPE)
             if not stores_to_scrape:
                 logger.warning("There are no urls to scrape.")
-                print("Unfortunately your area does not have any locations within a reasonable radius.")
+                logger.warning("Unfortunately your area does not have any locations within a reasonable radius.")
                 return
 
             tasks = []
@@ -171,7 +173,7 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
 
             for store in stores_to_scrape:
                 if check_if_in_db:
-                    is_in_db = ScrapedStore.objects.filter(zip_and_address__icontains=store[2]).exists()
+                    is_in_db = ScrapedStore.objects.filter(zip_and_address__icontains=store[2]).aexists()
                     if is_in_db:
                         zip_and_addresses.append(f"{store[0]} | {store[2]}")
                     elif not is_in_db:

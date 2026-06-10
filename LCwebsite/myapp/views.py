@@ -6,6 +6,8 @@ from asgiref.sync import async_to_sync
 from . import query_manager
 from django.db.models import Avg
 from django.http import JsonResponse
+import json
+from django.views.decorators.csrf import csrf_exempt
 
 # Create your views here.
 
@@ -43,35 +45,36 @@ def database_view(request):
         "filtered_entries": filtered_entries,
     })
 
-def home_page_view(request):
-    message = None
 
-    context = {
-        "result": None,
-        "total_stores_near_zip": 0,
-        "total_items_near_zip": 0,
-        "cheapest_name": "No Data",
-        "cheapest_price": 0.00,
-        "locations_to_query": []
-    }
-
+@csrf_exempt
+def scraper_api(request):
     if request.method == "POST":
-        target_zip = request.POST.get("user_zip")
+        
+        try:
+            body_unicode = request.body.decode('utf-8')
+            body_data = json.loads(body_unicode)
+            
+            target_zip = body_data.get("zip_code") 
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON format"}, status=400)
+
         locations_to_query = async_to_sync(script.scrape_based_on_zip_code)("https://littlecaesars.com/en-us/", target_zip, True)
-        total_stores_near_zip = ScrapedStore.objects.filter(zip_and_address__in=locations_to_query).values('zip_and_address').distinct().count()
-        cheapest_location_data = ScrapedStore.objects.values('zip_and_address').annotate(avg_price=Avg('item_price')).order_by('avg_price').first()
-        total_items_near_zip = ScrapedStore.objects.values(zip_and_address__in=locations_to_query).count()
 
-        context["total_stores_near_zip"] = total_stores_near_zip
-        context["total_items_near_zip"] = total_items_near_zip
-        context["cheapest_name"] = cheapest_location_data['zip_and_address'] if cheapest_location_data else "No Data"
-        context["cheapest_price"] = round(cheapest_location_data['avg_price'], 2) if cheapest_location_data else 0.00
-        context["locations_to_query"] = locations_to_query
+        scraped_items_queryset = ScrapedStore.objects.filter(zip_and_address__in=locations_to_query)
+        scraped_items_list = list(scraped_items_queryset.values('zip_and_address', 'item_name', 'item_price', 'item_cal'))
+        
+        total_stores = scraped_items_queryset.values('zip_and_address').distinct().count()
 
-        # Pass both the status message and the database rows to the HTML template
-    return render(request, "django_app/index.html", context)
+        return JsonResponse({
+            "status": "success",
+            "message": f"Successfully scraped {total_stores} stores.",
+            "results": scraped_items_list
+        })
 
-def api_view(request):
+    return JsonResponse({"error": "Method not allowed. Use POST."}, status=405)
+
+@csrf_exempt
+def dashboard_api(request):
     location_input = request.GET.get('location')
     max_price_input = request.GET.get('max_price')
     max_cal_input = request.GET.get('max_cal')

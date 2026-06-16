@@ -71,11 +71,13 @@ async def extract_product_prices(page, zip_code, address):
             clean_cal = float(cal.split()[0])
             store_name = zip_code + " | " + address
 
-            await ScrapedStore.objects.acreate(
+            await ScrapedStore.objects.aupdate_or_create(
                 zip_and_address = store_name,
                 item_name = name,
-                item_price = clean_price,
-                item_cal = clean_cal
+                defaults={
+                    'item_price': clean_price,
+                    'item_cal': clean_cal
+                }
             )
             logger.info(f"Store {store_name} was successfully added to the database.")
 
@@ -154,6 +156,8 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
         try:
             context, page = await new_stealth_context(browser)
             await page.goto(website)
+            await asyncio.sleep(timeout_fast())
+            await page.keyboard.press("Escape")
             await page.get_by_text("Pickup").click()
             await page.fill("//input[@type='text']", zip_code)
             await asyncio.sleep(timeout_fast())
@@ -173,7 +177,7 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
 
             for store in stores_to_scrape:
                 if check_if_in_db:
-                    is_in_db = ScrapedStore.objects.filter(zip_and_address__icontains=store[2]).aexists()
+                    is_in_db = await ScrapedStore.objects.filter(zip_and_address__icontains=store[2]).aexists()
                     if is_in_db:
                         zip_and_addresses.append(f"{store[0]} | {store[2]}")
                     elif not is_in_db:
@@ -199,8 +203,6 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
             await browser.close()
 
     logger.info("All tasks are completed.")
-
-    return f"Successfully scraped stores near ZIP: {zip_code}"
 
 if __name__ == "__main__":
     logging_setup()

@@ -10,42 +10,6 @@ import json
 from django.views.decorators.csrf import csrf_exempt
 
 # Create your views here.
-
-def database_view(request):
-    selected_location = request.GET.get('location')
-    max_price_input = request.GET.get('max_price')
-    max_cal_input = request.GET.get('max_cal')
-    sort_choice = request.GET.get('sort_by')
-
-    max_price = float(max_price_input) if max_price_input else None
-    max_cal = float(max_cal_input) if max_cal_input else None
-
-    total_database_items = ScrapedStore.objects.count()
-    
-    filtered_entries = query_manager.advanced_store_search(
-        location=selected_location, 
-        max_price=max_price, 
-        max_cal=max_cal, 
-        sort_by=sort_choice
-    )
-
-    unique_locations = query_manager.unique_locations()
-
-    cheapest_location_data = ScrapedStore.objects.values('zip_and_address').annotate(avg_price=Avg('item_price')).order_by('avg_price').first()
-
-    cheapest_store_name = cheapest_location_data['zip_and_address'] if cheapest_location_data else "No Data"
-    cheapest_avg_price = round(cheapest_location_data['avg_price'], 2) if cheapest_location_data else 0.00
-
-    # Pass both the status message and the database rows to the HTML template
-    return render(request, "django_app/total_stores.html", {
-        "total_database_items": total_database_items,
-        "unique_locations": unique_locations,
-        "cheapest_name": cheapest_store_name,
-        "cheapest_price": cheapest_avg_price,
-        "filtered_entries": filtered_entries,
-    })
-
-
 @csrf_exempt
 def scraper_api(request):
     if request.method == "POST":

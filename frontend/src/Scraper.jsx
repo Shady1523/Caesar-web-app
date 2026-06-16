@@ -12,6 +12,7 @@ function Scraper() {
   const [filterName, setFilterName] = useState("");
   const [filterMaxPrice, setFilterMaxPrice] = useState("");
   const [filterMaxCalories, setFilterMaxCalories] = useState("");
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
   // --- MEMORY RECOVERY ---
   useEffect(() => {
@@ -76,104 +77,185 @@ function Scraper() {
     return matchesLocation && matchesName && matchesPrice && matchesCalories;
   });
 
+  const handleClear = () => {
+    setLocalData([]);
+    setZipCode("");
+    setStatusMsg({ text: "", type: "" });
+    
+    setFilterLocation("");
+    setFilterName("");
+    setFilterMaxPrice("");
+    setFilterMaxCalories("");
+
+    sessionStorage.removeItem('scrapedData');
+    sessionStorage.removeItem('lastZip');
+    sessionStorage.removeItem('statusMsg');
+  };
+
+  const finalDataToRender = [...filteredLocalData].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+    
+    let aValue = a[sortConfig.key];
+    let bValue = b[sortConfig.key];
+    
+    // Force numbers to sort like numbers, not text
+    if (sortConfig.key === 'item_price') {
+      aValue = parseFloat(aValue) || 0;
+      bValue = parseFloat(bValue) || 0;
+    } else if (sortConfig.key === 'item_cal') {
+      aValue = parseInt(aValue) || 0;
+      bValue = parseInt(bValue) || 0;
+    } else {
+      // Force text to sort regardless of uppercase/lowercase
+      aValue = aValue ? aValue.toString().toLowerCase() : "";
+      bValue = bValue ? bValue.toString().toLowerCase() : "";
+    }
+    
+    if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
   return (
-    <div className="max-w-5xl mx-auto animate-fade-in">
+    <div className="min-h-screen bg-slate-50 p-8 font-sans">
+      <div className="max-w-6xl mx-auto">
       
-      {/* --- THE COMMAND CENTER --- */}
-      <div className="bg-slate-900 rounded-2xl p-8 md:p-12 shadow-2xl text-white mb-8">
-        <h2 className="text-3xl md:text-4xl font-bold mb-4">Deploy Scraper</h2>
-        <p className="text-slate-400 mb-8 text-lg">Enter a ZIP code to command Playwright to scrape live menu data.</p>
-        
-        <form onSubmit={runScraper} className="flex flex-col md:flex-row gap-4">
-          <input 
-            type="text" value={zipCode} onChange={(e) => setZipCode(e.target.value)} 
-            placeholder="Enter ZIP Code (e.g. 60074)" required
-            className="flex-1 bg-slate-800 border border-slate-700 text-white p-4 rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none text-lg transition-all"
-          />
-          <button 
-            type="submit" disabled={loading}
-            className="relative flex items-center justify-center bg-orange-600 hover:bg-orange-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold px-8 py-4 rounded-xl transition-colors min-w-[220px]"
-          >
-            {loading ? "Scraping Server..." : "Initialize Scan"}
-          </button>
-        </form>
-      </div>
+        {/* --- THE COMMAND CENTER --- */}
+        <div className="text-center mb-8">
+          <h2
+            className="shadow-md shadow-orange-500 text-center text-6xl text-black p-12 aspect-10/2 rounded-2xl overflow-hidden
+            bg-[url('https://images.unsplash.com/photo-1611915365928-565c527a0590?q=80&w=1025&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')]
+            bg-cover bg-[60%_20%] bg-no-repeat">
+          </h2>
+          
+          <p className="pt-8 my-3 font-serif text-xl text-slate-800">Start Scanning</p>
+          <form onSubmit={runScraper} className="flex justify-center items-center flex-wrap gap-3">
+            <input 
+              type="text" 
+              value={zipCode} 
+              onChange={(e) => setZipCode(e.target.value)} 
+              placeholder="Enter a 5 digit ZIP Code" 
+              required
+              className="w-64 bg-white text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500 shadow-sm"/>
+            <button 
+              type="submit"
+              disabled={loading}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-sm">
+              {loading ? "Scraping Server..." : "Initialize Scan"}
+            </button>
 
-      {statusMsg.text && (
-        <div className={`p-4 rounded-xl mb-8 border font-medium shadow-sm transition-all ${
-            statusMsg.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'
-        }`}>
-          {statusMsg.text}
+            {localData.length > 0 && (
+              <button 
+                type="button" 
+                onClick={handleClear}
+                disabled={loading}
+                className="bg-slate-700 hover:bg-slate-800 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-sm">
+                Clear Results
+              </button>
+            )}
+          </form>
         </div>
-      )}
 
-      {/* --- LIVE RESULTS & FILTERS --- */}
-      {localData.length > 0 && (
-        <>
-          {/* THE FILTER PANEL */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6 animate-fade-in">
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Filter Current Scrape</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <input 
-                type="text" value={filterLocation} onChange={(e) => setFilterLocation(e.target.value)} 
-                placeholder="Filter Location"
-                className="w-full border border-slate-300 p-3 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none"
-              />
-              <input 
-                type="text" value={filterName} onChange={(e) => setFilterName(e.target.value)} 
-                placeholder="Filter Item Name"
-                className="w-full border border-slate-300 p-3 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none"
-              />
-              <input 
-                type="number" value={filterMaxPrice} onChange={(e) => setFilterMaxPrice(e.target.value)} 
-                placeholder="Max Price ($)"
-                className="w-full border border-slate-300 p-3 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none"
-              />
-              <input 
-                type="number" value={filterMaxCalories} onChange={(e) => setFilterMaxCalories(e.target.value)} 
-                placeholder="Max Calories"
-                className="w-full border border-slate-300 p-3 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all outline-none"
-              />
-            </div>
+        {/* --- STATUS MESSAGES --- */}
+        {statusMsg.text && (
+          <div className={`text-center my-6 p-4 rounded-xl shadow-sm ${statusMsg.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
+            {statusMsg.text}
           </div>
+        )}
 
-          {/* THE DATA TABLE */}
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200 animate-fade-in mb-12">
-            <div className="bg-slate-50 p-4 border-b border-slate-200 flex justify-between items-center">
-               <h3 className="text-lg font-bold text-slate-800">Freshly Scraped Results</h3>
-               <span className="bg-orange-100 text-orange-800 text-xs font-bold px-3 py-1 rounded-full">
-                 Showing {filteredLocalData.length} of {localData.length}
-               </span>
+        {/* --- LIVE RESULTS & FILTERS --- */}
+        {localData.length > 0 && (
+          <div>
+            
+            {/* THE FILTER PANEL */}
+            <div className="bg-orange-500 p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-slate-800">Search Parameters</h3>
+                <span className="text-sm font-medium text-black bg-orange-400 px-3 py-1 rounded-full">
+                  Showing {filteredLocalData.length} of {localData.length}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <input 
+                  type="text" value={filterLocation} onChange={(e) => setFilterLocation(e.target.value)} 
+                  placeholder="Location"
+                  className="w-full bg-orange-400 text-slate-900 p-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-700 transition-shadow"/>
+                <input 
+                  type="text" value={filterName} onChange={(e) => setFilterName(e.target.value)} 
+                  placeholder="Item Name" 
+                  className="w-full bg-orange-400 text-slate-900 p-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-700 transition-shadow"/>
+                <input 
+                  type="number" value={filterMaxPrice} onChange={(e) => setFilterMaxPrice(e.target.value)} 
+                  placeholder="Max Price" 
+                  className="w-full bg-orange-400 text-slate-900 p-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-700 transition-shadow"/>
+                <input 
+                  type="number" value={filterMaxCalories} onChange={(e) => setFilterMaxCalories(e.target.value)} 
+                  placeholder="Max Calories" 
+                  className="w-full bg-orange-400 text-slate-900 p-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-700 transition-shadow"/>
+              </div>
             </div>
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="p-4 text-left text-xs font-bold text-slate-500 uppercase">Location</th>
-                  <th className="p-4 text-left text-xs font-bold text-slate-500 uppercase">Item Name</th>
-                  <th className="p-4 text-left text-xs font-bold text-slate-500 uppercase">Calories</th>
-                  <th className="p-4 text-left text-xs font-bold text-slate-500 uppercase">Price</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredLocalData.map((item, index) => (
-                  <tr key={index} className="hover:bg-orange-50 transition-colors">
-                    <td className="p-4 text-slate-600 text-sm">{item.zip_and_address}</td>
-                    <td className="p-4 font-bold text-slate-900">{item.item_name}</td>
-                    <td className="p-4 text-slate-500 text-sm">{item.item_cal}</td>
-                    <td className="p-4 text-emerald-600 font-bold">${item.item_price}</td>
-                  </tr>
-                ))}
-                {filteredLocalData.length === 0 && (
-                  <tr>
-                    <td colSpan="4" className="p-8 text-center text-slate-500">No items match your current filters.</td>
-                  </tr>
+
+            {/* THE DATA TABLE */}
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-orange-600 border-b border-black select-none">
+                    <tr>
+                      <th onClick={() => handleSort('zip_and_address')} className="px-6 py-3 text-xs font-semibold text-black uppercase tracking-wider cursor-pointer hover:bg-slate-500 transition-colors">
+                        <div className="flex items-center gap-1">
+                          Location {sortConfig.key === 'zip_and_address' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+                        </div>
+                      </th>
+                      <th onClick={() => handleSort('item_name')} className="px-6 py-3 text-xs font-semibold text-black uppercase tracking-wider cursor-pointer hover:bg-slate-500 transition-colors">
+                        <div className="flex items-center gap-1">
+                          Item Name {sortConfig.key === 'item_name' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+                        </div>
+                      </th>
+                      <th onClick={() => handleSort('item_cal')} className="px-6 py-3 text-xs font-semibold text-black uppercase tracking-wider cursor-pointer hover:bg-slate-500 transition-colors">
+                        <div className="flex items-center gap-1">
+                          Calories {sortConfig.key === 'item_cal' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+                        </div>
+                      </th>
+                      <th onClick={() => handleSort('item_price')} className="px-6 py-3 text-xs font-semibold text-black uppercase tracking-wider cursor-pointer hover:bg-slate-500 transition-colors">
+                        <div className="flex items-center gap-1">
+                          Price {sortConfig.key === 'item_price' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+                        </div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black bg-orange-500">
+                    {finalDataToRender.map((item, index) => (
+                      <tr key={index} className="hover:bg-orange-400 transition-colors duration-200">
+                        <td className="px-6 py-4 text-sm text-black">{item.zip_and_address}</td>
+                        <td className="px-6 py-4 text-sm text-black">{item.item_name}</td>
+                        <td className="px-6 py-4 text-sm text-black">{item.item_cal} kcal</td>
+                        <td className="px-6 py-4 text-sm text-black">${item.item_price}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                
+                {finalDataToRender.length === 0 && (
+                  <div className="p-8 text-center text-slate-500 bg-slate-50 rounded-b-xl border-t border-slate-200">
+                    <p>No items match your current filters.</p>
+                  </div>
                 )}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
+              </div>
+            </div>
 
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }

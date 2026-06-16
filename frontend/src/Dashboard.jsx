@@ -76,7 +76,7 @@ function Dashboard() {
         {/* HEADER */}
         <div className="mb-6">
           <h2 className="text-3xl font-bold text-slate-900">Pizza Database</h2>
-          <p className="text-sm text-slate-500 mt-1">Filter and analyze scraped menu items</p>
+          <p className="text-sm text-slate-500 mt-1">Filter and analyze menu items</p>
         </div>
 
         {/* THE FILTER PANEL */}

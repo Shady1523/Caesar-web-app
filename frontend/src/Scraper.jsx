@@ -142,7 +142,7 @@ function Scraper() {
               type="text" 
               value={zipCode} 
               onChange={(e) => setZipCode(e.target.value)} 
-              placeholder="Enter a 5 digit ZIP Code" 
+              placeholder="Enter a 5 Digit ZIP Code" 
               required
               disabled={loading || statusMsg.text !== ""}
               className="w-64 bg-white text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500 shadow-sm"/>

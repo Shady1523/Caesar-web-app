@@ -136,7 +136,7 @@ function Scraper() {
             bg-cover bg-[60%_20%] bg-no-repeat">
           </h2>
           
-          <p className="pt-8 my-3 font-serif text-xl text-slate-800">Start Scanning</p>
+          <p className="pt-8 my-3 font-serif text-xl text-slate-800">Scanning Tool</p>
           <form onSubmit={runScraper} className="flex justify-center items-center flex-wrap gap-3">
             <input 
               type="text" 
@@ -144,15 +144,16 @@ function Scraper() {
               onChange={(e) => setZipCode(e.target.value)} 
               placeholder="Enter a 5 digit ZIP Code" 
               required
+              disabled={loading || statusMsg.text !== ""}
               className="w-64 bg-white text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500 shadow-sm"/>
             <button 
               type="submit"
-              disabled={loading}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-sm">
-              {loading ? "Scraping Server..." : "Initialize Scan"}
+              disabled={loading || statusMsg.text !== ""}
+              className="bg-orange-500 hover:bg-orange-600 disabled:hover:bg-orange-500 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-sm">
+              {loading ? "Scraping Server..." : statusMsg.text !== "" ? "Scan Complete" : "Initialize Scan"}
             </button>
 
-            {localData.length > 0 && (
+            {(localData.length > 0 || statusMsg.text !== "") && (
               <button 
                 type="button" 
                 onClick={handleClear}

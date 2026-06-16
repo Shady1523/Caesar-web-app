@@ -6,7 +6,8 @@ import random
 from playwright_stealth import Stealth
 import logging
 from logging.handlers import RotatingFileHandler
-from asgiref.sync import sync_to_async
+from datetime import timedelta
+from django.utils import timezone
 
 NUM_STORES_TO_SCRAPE = 5
 
@@ -146,6 +147,9 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
     if not zip_code:
         logger.warning("You did not enter a zip code.")
         return
+    elif len(zip_code) != 5:
+        logger.warning("Invalid Zip Code.")
+        return
 
     logger.info("Opening chromium.")
 
@@ -176,13 +180,15 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
             zip_and_addresses = []
 
             for store in stores_to_scrape:
+                store_identifier = f"{store[0]} | {store[2]}"
                 if check_if_in_db:
-                    is_in_db = await ScrapedStore.objects.filter(zip_and_address__icontains=store[2]).aexists()
-                    if is_in_db:
-                        zip_and_addresses.append(f"{store[0]} | {store[2]}")
-                    elif not is_in_db:
+                    fresh_entry = await ScrapedStore.objects.filter(zip_and_address__icontains=store_identifier, scraped_at__gte=timezone.now()-timedelta(days=7)).aexists()
+                    if fresh_entry:
+                        zip_and_addresses.append(store_identifier)
+                    else:
+                        await ScrapedStore.objects.filter(zip_and_address__icontains=store_identifier).adelete()
                         tasks.append(process_store_directly(browser, store[1], store[0], store[2]))
-                        zip_and_addresses.append(f"{store[0]} | {store[2]}")
+                        zip_and_addresses.append(store_identifier)
                 else:
                     tasks.append(process_store_directly(browser, store[1], store[0], store[2]))
             

@@ -10,6 +10,8 @@ import json
 from django.views.decorators.csrf import csrf_exempt
 
 # Create your views here.
+
+#View for the Scraper page
 @csrf_exempt
 def scraper_api(request):
     if request.method == "POST":
@@ -25,7 +27,7 @@ def scraper_api(request):
         locations_to_query = async_to_sync(script.scrape_based_on_zip_code)("https://littlecaesars.com/en-us/", target_zip, True)
 
         scraped_items_queryset = ScrapedStore.objects.filter(zip_and_address__in=locations_to_query)
-        scraped_items_list = list(scraped_items_queryset.values('zip_and_address', 'item_name', 'item_price', 'item_cal'))
+        scraped_items_list = list(scraped_items_queryset.values('zip_and_address', 'item_name', 'item_price', 'item_cal', 'store_id'))
         
         total_stores = scraped_items_queryset.values('zip_and_address').distinct().count()
 
@@ -37,6 +39,7 @@ def scraper_api(request):
 
     return JsonResponse({"error": "Method not allowed. Use POST."}, status=405)
 
+#View for the Database page
 @csrf_exempt
 def dashboard_api(request):
     location_input = request.GET.get('location')

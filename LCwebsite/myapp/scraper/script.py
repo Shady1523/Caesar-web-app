@@ -38,7 +38,7 @@ def timeout_fast(): return random.uniform(1.0, 2.2)
 
 #MAIN Function that is used to extract prices, calories, and food names from a given store.
 #Once extracted, it adds the information to a database.
-async def extract_product_prices(page, zip_code, address):
+async def extract_product_prices(page, zip_code, address, store_id):
     price_pattern = re.compile(r"\$\d{1,3}(?:,\d{3})*(?:\.\d{2})?")
     calorie_pattern = re.compile(r"\d{3,4}\s*Cal(?:ories)?", re.IGNORECASE)
     menu_pattern = re.compile( r'^.+?(?=\s*\d+\s*Cal)', re.IGNORECASE)
@@ -77,7 +77,8 @@ async def extract_product_prices(page, zip_code, address):
                 item_name = name,
                 defaults={
                     'item_price': clean_price,
-                    'item_cal': clean_cal
+                    'item_cal': clean_cal,
+                    'store_id': store_id
                 }
             )
             logger.info(f"Store {store_name} was successfully added to the database.")
@@ -114,7 +115,7 @@ async def url_scraper(page, NUMBER_OF_STORES_TO_SCRAPE):
             zip_code_field = await store.get_by_test_id(f"locator__cityStateZip-{store_id}").inner_text()
             zip_code = zip_code_field.split()[-1]
             address = await store.get_by_test_id(f"locator__streetAddress-{store_id}").inner_text()
-            stores_to_scrape.append((zip_code, store_url, address))
+            stores_to_scrape.append((zip_code, store_url, address, store_id))
             logger.info(f"Store {store_id} was successfully added.")
         else:
             logger.warning("The store id for this store was not found.")
@@ -125,7 +126,7 @@ async def url_scraper(page, NUMBER_OF_STORES_TO_SCRAPE):
 
 #HELPER function that goes to the given URL and scrapes the menu.
 #Used in the "scrape_based_on_zip_code" main function
-async def process_store_directly(browser, url_to_scrape, zip_code, address):
+async def process_store_directly(browser, url_to_scrape, zip_code, address, store_id):
     logger.info(f"Worker launched for store {url_to_scrape}")
     context, page = None, None
 
@@ -133,7 +134,7 @@ async def process_store_directly(browser, url_to_scrape, zip_code, address):
         context, page = await new_stealth_context(browser)
         await page.goto(url_to_scrape)
         await asyncio.sleep(timeout_fast())
-        await extract_product_prices(page, zip_code, address)
+        await extract_product_prices(page, zip_code, address, store_id)
 
     except Exception as e:
         logger.exception(f"Scraper failed on {url_to_scrape}: {e}.")
@@ -187,10 +188,10 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
                         zip_and_addresses.append(store_identifier)
                     else:
                         await ScrapedStore.objects.filter(zip_and_address__icontains=store_identifier).adelete()
-                        tasks.append(process_store_directly(browser, store[1], store[0], store[2]))
+                        tasks.append(process_store_directly(browser, store[1], store[0], store[2], store[3]))
                         zip_and_addresses.append(store_identifier)
                 else:
-                    tasks.append(process_store_directly(browser, store[1], store[0], store[2]))
+                    tasks.append(process_store_directly(browser, store[1], store[0], store[2], store[3]))
             
             if zip_and_addresses and not tasks:
                 return zip_and_addresses

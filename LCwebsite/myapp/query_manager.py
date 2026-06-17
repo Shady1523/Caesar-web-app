@@ -50,6 +50,7 @@ def advanced_store_search(near_zip_locations=None, location=None, max_price=None
         results = results.order_by('-scraped_at')
 
     return results
+
 #Returns the number of unique locations
 def unique_locations():
     return ScrapedStore.objects.values_list('zip_and_address', flat=True).distinct()

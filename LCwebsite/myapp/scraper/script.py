@@ -169,10 +169,8 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
 
         try:
             context, page = await new_stealth_context(browser)
-            await page.goto(website)
+            await page.goto(f"{website}order/pickup/")
             await asyncio.sleep(timeout_fast())
-            await page.keyboard.press("Escape")
-            await page.get_by_text("Pickup").click()
             await page.fill("//input[@type='text']", zip_code)
             await asyncio.sleep(timeout_fast())
             await page.get_by_text(zip_code).click()

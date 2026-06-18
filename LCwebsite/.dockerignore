@@ -1,8 +1,11 @@
 .env
-db.sqlite3
-__pycache__/
-*.pyc
-.git/
 venv/
 env/
+.venv/
+db.sqlite3
+*.sqlite3
+__pycache__/
+*.py[cod]
+*$py.class
+.vscode/
 node_modules/

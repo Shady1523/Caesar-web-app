@@ -1,43 +1,128 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 function Dashboard() {
-  // --- 1. STATE ---
+  // --- STATE ---
+  const [allPizzas, setAllPizzas] = useState([]);
+
   const [pizzas, setPizzas] = useState([]);
   const [maxPrice, setMaxPrice] = useState("");
   const [locationStr, setLocationStr] = useState("");
   const [itemNameStr, setItemNameStr] = useState("");
   const [maxCalories, setMaxCalories] = useState("");
-  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [cacheHit, setCacheHit] = useState(false);
   
+  const [statusMsg, setStatusMsg] = useState({ text: "", type: "" });
+
   // Added Sorting State
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
-  // --- 2. API FETCH ---
-  const fetchStores = async () => {
-    try {
-      const params = new URLSearchParams();
-      if (maxPrice) params.append('max_price', maxPrice);
-      if (locationStr) params.append('location', locationStr);
-      if (itemNameStr) params.append('item_name', itemNameStr);
-      if (maxCalories) params.append('max_cal', maxCalories);
-
-      const response = await fetch(`/api/v1/stores/?${params.toString()}`);
-      const data = await response.json();
-      const fetchedEntries = data.results || data;
-      setPizzas(fetchedEntries);
-      if (!maxPrice && !locationStr && !itemNameStr && !maxCalories) {
-        setTotalCount(fetchedEntries.length);
-      }
-    } catch (error) {
-      console.error("Failed to fetch data:", error);
-    }
-  };
-
+// --- REAL-TIME CLIENT-SIDE FILTER ---
   useEffect(() => {
-    fetchStores();
-  }, []);
+    const filtered = allPizzas.filter(item => {
+      const matchesLocation = !locationStr || item.zip_and_address.toLowerCase().includes(locationStr.toLowerCase());
+      const matchesName = !itemNameStr || item.item_name.toLowerCase().includes(itemNameStr.toLowerCase());
+      const matchesPrice = !maxPrice || parseFloat(item.item_price) <= parseFloat(maxPrice);
+      const matchesCal = !maxCalories || parseInt(item.item_cal) <= parseInt(maxCalories);
+      return matchesLocation && matchesName && matchesPrice && matchesCal;
+    });
+    setPizzas(filtered);
+  }, [allPizzas, locationStr, itemNameStr, maxPrice, maxCalories]);
 
-  // --- 3. SORTING PIPELINE ---
+  // --- LOAD ALL DATA (once per session, only re-fetches if database changed) ---
+const loadData = useCallback(async () => {
+  // Grab whatever is in the cache first
+  const cachedData = sessionStorage.getItem('dashboardData');
+  const cachedVersion = sessionStorage.getItem('dashboardVersion');
+
+  if (cachedData) {
+    const parsed = JSON.parse(cachedData);
+    setAllPizzas(parsed);
+    setPizzas(parsed);
+    setCacheHit(true);
+    // Turn off the loading spinner instantly
+    setIsLoading(false); 
+  } else {
+    // Only show the loading spinner if they have an entirely empty cache
+    setIsLoading(true); 
+  }
+
+  // Silently ask the server for the version
+  try {
+    const versionRes = await fetch('/api/db_version/');
+    if (versionRes.ok) {
+      const versionData = await versionRes.json();
+      const latestVersion = String(versionData.latest_scraped_at);
+
+      // If the server version is newer, fetch the real data
+      if (latestVersion !== cachedVersion) {
+        setIsLoading(true); // Bring back the spinner just for the heavy download
+        
+        const response = await fetch('/api/v1/stores/');
+        const data = await response.json();
+        const allResults = data.results || data;
+
+        setAllPizzas(allResults);
+        setPizzas(allResults);
+        setCacheHit(false);
+
+        sessionStorage.setItem('dashboardData', JSON.stringify(allResults));
+        sessionStorage.setItem('dashboardVersion', latestVersion);
+      }
+    }
+  } catch (error) {
+    console.error("Failed to fetch data:", error);
+  } finally {
+    setIsLoading(false);
+  }
+}, []);
+ 
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+ 
+  // Force a fresh fetch by clearing the cache first
+const handleRefresh = async () => {
+  setIsLoading(true);
+
+  try {
+    // 1. Ping the lightweight version endpoint FIRST
+    const versionRes = await fetch('/api/db_version/');
+    
+    if (versionRes.ok) {
+      const versionData = await versionRes.json();
+      const serverVersion = String(versionData.latest_scraped_at);
+      const localVersion = sessionStorage.getItem('dashboardVersion');
+
+      // 2. Compare the server's timestamp to the browser's timestamp
+      if (serverVersion && localVersion === serverVersion) {
+        // The database hasn't changed. 
+        // Stop here and tell the user they are up to date!
+        setStatusMsg({ text: "Your data is already up to date!", type: "info" });
+        setTimeout(() => setStatusMsg({ text: "", type: "" }), 3000);
+        
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    // Now it is safe to clear the old cache and download the new data
+    sessionStorage.removeItem('dashboardData');
+    sessionStorage.removeItem('dashboardVersion');
+    
+    // loadData() will now correctly pull from the database because the cache is empty
+    await loadData(); 
+    
+    setStatusMsg({ text: "Successfully updated with the latest data!", type: "success" });
+    setTimeout(() => setStatusMsg({ text: "", type: "" }), 3000);
+
+  } catch (error) {
+    console.error("Failed to check for updates:", error);
+    setIsLoading(false);
+  }
+};
+
+  // --- SORTING PIPELINE ---
   const sortedPizzas = [...pizzas].sort((a, b) => {
     if (!sortConfig.key) return 0;
     
@@ -68,7 +153,7 @@ function Dashboard() {
     setSortConfig({ key, direction });
   };
 
-  // --- 4. RENDER HTML ---
+  // --- RENDER HTML ---
   return (
     <div className="min-h-screen bg-slate-50 p-8 font-sans">
       <div className="max-w-6xl mx-auto">
@@ -84,7 +169,7 @@ function Dashboard() {
           <div className="flex justify-between items-center mb-4">  
             <h3 className="text-lg font-semibold text-black mb-4">Search Parameters</h3>
               <span className="text-sm font-medium text-black bg-orange-400 px-3 py-1 rounded-full">
-                Showing {pizzas.length} of {totalCount}
+                Showing {pizzas.length} of {allPizzas.length} items
               </span>
           </div>
           
@@ -111,14 +196,30 @@ function Dashboard() {
             />
           </div>
 
-          <button 
-            onClick={fetchStores} 
-            className="bg-orange-500 hover:bg-orange-600 text-black px-6 py-2.5 rounded-lg font-medium transition-colors shadow-sm"
-          >
-            Apply Filters
-          </button>
-        </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleRefresh}
+              disabled={isLoading}
+              className="bg-orange-400 hover:bg-orange-500 disabled:opacity-60 disabled:cursor-not-allowed text-black px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm text-sm">
+              Refresh Data
+            </button>
+            {statusMsg.text && (
+              <div className={`p-2 rounded-lg shadow-sm text-sm font-medium
+              ${statusMsg.type === 'success' ? 'bg-orange-400 text-red-800' : 'bg-orange-400 text-black'}`}>
+              {statusMsg.text}
+              </div>
+            )}
+            <span className="text-xs text-black italic">
+              {isLoading
+                ? "Loading data..."
+                : cacheHit
+                  ? "Loaded from cache · no database call made"
+                  : "Loaded from database · results cached for this session"}
+            </span>
+          </div>
 
+
+        </div>
             {/* THE DATA TABLE */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
               <div className="overflow-x-auto">

@@ -15,10 +15,15 @@ function Scraper() {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
   // --- CARD VIEW STATE ---
-  const [selectedRestaurant, setSelectedRestaurant] = useState(null); // null = show cards, string = show dashboard for that restaurant
+  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
   const scrollRef = useRef(null);
+
+  // --- SCRAPE LIMIT STATE ---
+  const [canScrape, setCanScrape] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
+  const [remainingScrapes, setRemainingScrapes] = useState(null);
 
   // --- MEMORY RECOVERY ---
   useEffect(() => {
@@ -32,6 +37,35 @@ function Scraper() {
       if (savedMsg) setStatusMsg(JSON.parse(savedMsg));
     }
   }, []);
+
+  // --- SCRAPE LIMIT CHECK ---
+  // Extracted into a useCallback so it can be re-called after each scrape
+  const refreshScrapeStatus = useCallback(() => {
+    setIsChecking(true);
+    fetch('/api/v1/check_scrape_status/')
+      .then(res => {
+        if (!res.ok) throw new Error("Server error");
+        return res.json();
+      })
+      .then(data => {
+        setCanScrape(data.can_scrape);
+        setRemainingScrapes(data.remaining_scrapes);
+      })
+      .catch(err => {
+        // Fail open: a network error on the status check should not lock the user out
+        console.error("Could not verify scrape limit:", err);
+        setCanScrape(true);
+        setRemainingScrapes(null);
+      })
+      .finally(() => {
+        setIsChecking(false);
+      });
+  }, []);
+
+  // Run once on mount
+  useEffect(() => {
+    refreshScrapeStatus();
+  }, [refreshScrapeStatus]);
 
   const runScraper = async (e) => {
     e.preventDefault();
@@ -49,26 +83,30 @@ function Scraper() {
       const data = await response.json();
 
       if (!response.ok) {
-          throw new Error(data.error || "Failed to scrape the area.");
+        throw new Error(data.error || "Failed to scrape the area.");
       }
 
       const newResults = data.results || [];
-      const successMsg = { 
-          text: data.message || `Successfully scraped area ${zipCode}. Found ${newResults.length} items.`, 
-          type: "success" 
+      const successMsg = {
+        text: data.message || `Successfully scraped area ${zipCode}. Found ${newResults.length} items.`,
+        type: "success"
       };
-      
+
       setLocalData(newResults);
       setStatusMsg(successMsg);
 
       sessionStorage.setItem('scrapedData', JSON.stringify(newResults));
       sessionStorage.setItem('lastZip', zipCode);
       sessionStorage.setItem('statusMsg', JSON.stringify(successMsg));
-      
+
+      // Re-check limit after a successful scrape so the button
+      // disables immediately if the user just used their last scan
+      refreshScrapeStatus();
+
     } catch (error) {
       setStatusMsg({ text: error.message || "Error connecting to the scraper backend.", type: "error" });
     } finally {
-      setLoading(false); 
+      setLoading(false);
     }
   };
 
@@ -76,7 +114,7 @@ function Scraper() {
     const matchesLocation = filterLocation === "" || item.zip_and_address.toLowerCase().includes(filterLocation.toLowerCase());
     const matchesName = filterName === "" || item.item_name.toLowerCase().includes(filterName.toLowerCase());
     const matchesPrice = filterMaxPrice === "" || parseFloat(item.item_price) <= parseFloat(filterMaxPrice);
-    
+
     const itemCal = parseInt(item.item_cal);
     const matchesCalories = filterMaxCalories === "" || (!isNaN(itemCal) && itemCal <= parseInt(filterMaxCalories));
 
@@ -88,7 +126,7 @@ function Scraper() {
     setZipCode("");
     setStatusMsg({ text: "", type: "" });
     setSelectedRestaurant(null);
-    
+
     setFilterLocation("");
     setFilterName("");
     setFilterMaxPrice("");
@@ -104,10 +142,10 @@ function Scraper() {
 
   const finalDataToRender = [...filteredLocalData].sort((a, b) => {
     if (!sortConfig.key) return 0;
-    
+
     let aValue = a[sortConfig.key];
     let bValue = b[sortConfig.key];
-    
+
     if (sortConfig.key === 'item_price') {
       aValue = parseFloat(aValue) || 0;
       bValue = parseFloat(bValue) || 0;
@@ -118,7 +156,7 @@ function Scraper() {
       aValue = aValue ? aValue.toString().toLowerCase() : "";
       bValue = bValue ? bValue.toString().toLowerCase() : "";
     }
-    
+
     if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
     if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
     return 0;
@@ -133,7 +171,6 @@ function Scraper() {
   };
 
   // --- GROUP DATA INTO RESTAURANT CARDS ---
-  // Each unique zip_and_address becomes one card, sorted by cheapest item price
   const restaurantCards = Object.values(
     localData.reduce((acc, item) => {
       const key = item.zip_and_address;
@@ -166,14 +203,12 @@ function Scraper() {
     if (!el) return;
     el.scrollBy({ left: dir * 310, behavior: "smooth" });
   };
-  
+
   useEffect(() => {
     const timer = setTimeout(() => {
-    updateArrows();
+      updateArrows();
     }, 10);
-
     return () => clearTimeout(timer);
-    
   }, [localData, selectedRestaurant, updateArrows]);
 
   // --- DASHBOARD: filter to selected restaurant only ---
@@ -198,10 +233,18 @@ function Scraper() {
       })
     : finalDataToRender;
 
+  // --- BUTTON LABEL LOGIC ---
+  const getScanButtonLabel = () => {
+    if (loading) return "Scraping Server...";
+    if (isChecking) return "Checking limits...";
+    if (!canScrape) return "Daily Limit Reached";
+    return "Initialize Scan";
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 p-8 font-sans">
       <div className="max-w-6xl mx-auto">
-      
+
         {/* --- THE COMMAND CENTER --- */}
         <div className="text-center mb-8">
           <h2
@@ -209,29 +252,30 @@ function Scraper() {
             bg-[url('https://images.unsplash.com/photo-1611915365928-565c527a0590?q=80&w=1025&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')]
             bg-cover bg-[60%_20%] bg-no-repeat">
           </h2>
-          
+
           <p className="pt-8 my-3 font-serif text-xl text-slate-800">Scanning Tool</p>
           <form onSubmit={runScraper} className="flex justify-center items-center flex-wrap gap-3">
-            <input 
-              type="text" 
-              value={zipCode} 
-              onChange={(e) => setZipCode(e.target.value)} 
-              placeholder="Enter a 5 Digit ZIP Code" 
+            <input
+              type="text"
+              value={zipCode}
+              onChange={(e) => setZipCode(e.target.value)}
+              placeholder="Enter a 5 Digit ZIP Code"
               required
               disabled={loading || statusMsg.text !== ""}
               className="w-64 bg-white text-slate-900 p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500 shadow-sm"/>
+
             {localData.length === 0 && statusMsg.text === "" && (
-              <button 
+              <button
                 type="submit"
-                disabled={loading}
-                className="bg-orange-500 hover:bg-orange-600 disabled:hover:bg-orange-500 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-sm">
-                {loading ? "Scraping Server..." : "Initialize Scan"}
+                disabled={loading || isChecking || !canScrape}
+                className="bg-orange-500 hover:bg-orange-600 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-orange-500 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-sm">
+                {getScanButtonLabel()}
               </button>
             )}
 
             {(localData.length > 0 || statusMsg.text !== "") && (
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={handleClear}
                 disabled={loading}
                 className="bg-slate-700 hover:bg-slate-800 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-sm">
@@ -239,11 +283,28 @@ function Scraper() {
               </button>
             )}
           </form>
+
+          {/* --- SCRAPE LIMIT INDICATOR --- */}
+          <div className="mt-3 h-5">
+            {isChecking && (
+              <p className="text-xs text-slate-400">Verifying scan limit...</p>
+            )}
+            {!isChecking && canScrape && remainingScrapes !== null && (
+              <p className="text-xs text-slate-400">
+                <span className="font-semibold text-orange-500">{remainingScrapes}</span> scan{remainingScrapes !== 1 ? 's' : ''} remaining today
+              </p>
+            )}
+            {!isChecking && !canScrape && (
+              <p className="text-xs text-red-500 font-medium">
+                Daily scan limit reached. Resets tomorrow.
+              </p>
+            )}
+          </div>
         </div>
 
         {/* --- STATUS MESSAGES --- */}
         {statusMsg.text && (
-          <div className={`text-center my-6 p-4 rounded-xl shadow-sm ${statusMsg.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
+          <div className={"text-center my-6 p-4 rounded-xl shadow-sm " + (statusMsg.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200')}>
             {statusMsg.text}
           </div>
         )}
@@ -324,7 +385,7 @@ function Scraper() {
                         {/* Website link */}
                         <div className="px-4 py-3 border-t border-slate-100">
                           <a
-                            href={`https://littlecaesars.com/en-us/order/pickup/stores/${restaurant.items[0].store_id}/menu/`}
+                            href={"https://littlecaesars.com/en-us/order/pickup/stores/" + restaurant.items[0].store_id + "/menu/"}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
@@ -394,23 +455,23 @@ function Scraper() {
                   Showing {dashboardData.length} of {localData.filter(i => i.zip_and_address === selectedRestaurant).length}
                 </span>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <input 
-                  type="text" value={filterLocation} onChange={(e) => setFilterLocation(e.target.value)} 
+                <input
+                  type="text" value={filterLocation} onChange={(e) => setFilterLocation(e.target.value)}
                   placeholder="Location"
                   className="w-full bg-orange-400 text-slate-900 p-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-700 transition-shadow"/>
-                <input 
-                  type="text" value={filterName} onChange={(e) => setFilterName(e.target.value)} 
-                  placeholder="Item Name" 
+                <input
+                  type="text" value={filterName} onChange={(e) => setFilterName(e.target.value)}
+                  placeholder="Item Name"
                   className="w-full bg-orange-400 text-slate-900 p-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-700 transition-shadow"/>
-                <input 
-                  type="number" value={filterMaxPrice} onChange={(e) => setFilterMaxPrice(e.target.value)} 
-                  placeholder="Max Price" 
+                <input
+                  type="number" value={filterMaxPrice} onChange={(e) => setFilterMaxPrice(e.target.value)}
+                  placeholder="Max Price"
                   className="w-full bg-orange-400 text-slate-900 p-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-700 transition-shadow"/>
-                <input 
-                  type="number" value={filterMaxCalories} onChange={(e) => setFilterMaxCalories(e.target.value)} 
-                  placeholder="Max Calories" 
+                <input
+                  type="number" value={filterMaxCalories} onChange={(e) => setFilterMaxCalories(e.target.value)}
+                  placeholder="Max Calories"
                   className="w-full bg-orange-400 text-slate-900 p-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-700 transition-shadow"/>
               </div>
             </div>
@@ -454,7 +515,7 @@ function Scraper() {
                     ))}
                   </tbody>
                 </table>
-                
+
                 {dashboardData.length === 0 && (
                   <div className="p-8 text-center text-slate-500 bg-slate-50 rounded-b-xl border-t border-slate-200">
                     <p>No items match your current filters.</p>

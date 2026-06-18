@@ -1,20 +1,47 @@
-from django.shortcuts import render
-from django.http import HttpResponse
 from .scraper import script
 from .models import ScrapedStore
 from asgiref.sync import async_to_sync
 from . import query_manager
-from django.db.models import Avg
 from django.http import JsonResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
+from django.core.cache import cache
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
 
 # Create your views here.
+
+#Utility function to get client IP address
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+#API endpoint to check if the user can scrape based on their IP address
+@api_view(['GET'])
+def check_scrape_status(request):
+    ip = get_client_ip(request)
+    count = cache.get(f"scrape_count_{ip}", 0)
+    
+    return Response({
+    "can_scrape": count < 5,
+    "remaining_scrapes": 5 - count
+    })
 
 #View for the Scraper page
 @csrf_exempt
 def scraper_api(request):
     if request.method == "POST":
+
+        ip = get_client_ip(request)
+        count = cache.get(f"scrape_count_{ip}", 0)
+        
+        if count >= 5:
+            return JsonResponse({"error": "Daily limit reached."}, status=429)
         
         try:
             body_unicode = request.body.decode('utf-8')
@@ -25,6 +52,8 @@ def scraper_api(request):
             return JsonResponse({"error": "Invalid JSON format"}, status=400)
 
         locations_to_query = async_to_sync(script.scrape_based_on_zip_code)("https://littlecaesars.com/en-us/", target_zip, True)
+
+        cache.set(f"scrape_count_{ip}", count + 1, timeout=86400)
 
         scraped_items_queryset = ScrapedStore.objects.filter(zip_and_address__in=locations_to_query)
         scraped_items_list = list(scraped_items_queryset.values('zip_and_address', 'item_name', 'item_price', 'item_cal', 'store_id'))
@@ -76,3 +105,12 @@ def dashboard_api(request):
         },
         "results": data_list
     })
+
+# Grab the very last item added to the database
+def get_db_version(request):
+    latest_item = ScrapedStore.objects.order_by('-id').first()
+    
+    if latest_item:
+        return JsonResponse({"latest_scraped_at": latest_item.id})
+    else:
+        return JsonResponse({"latest_scraped_at": 0})

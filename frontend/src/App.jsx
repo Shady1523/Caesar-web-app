@@ -17,8 +17,8 @@ function App() {
                   </div>
                   <div className="hidden md:block">
                     <div className="ml-10 flex items-baseline space-x-4">
-                      <Link to="/" className="shadow hover:shadow-md bg-orange-500 rounded-md px-3 py-2 text-sm font-medium text-white hover:bg-orange-600 hover:text-white">DATABASE</Link>
-                      <Link to="/scrape" className="shadow hover:shadow-md bg-orange-500 rounded-md px-3 py-2 text-sm font-medium text-white hover:bg-orange-600 hover:text-white">SCRAPER</Link>
+                      <Link to="/stores/" className="shadow hover:shadow-md bg-orange-500 rounded-md px-3 py-2 text-sm font-medium text-white hover:bg-orange-600 hover:text-white">DATABASE</Link>
+                      <Link to="/" className="shadow hover:shadow-md bg-orange-500 rounded-md px-3 py-2 text-sm font-medium text-white hover:bg-orange-600 hover:text-white">SCRAPER</Link>
                     </div>
                   </div>
                 </div>
@@ -30,8 +30,8 @@ function App() {
       {/* The Dynamic Content Area */}
       <div className="DynamicContent">
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/scrape" element={<Scraper />} />
+          <Route path="/stores/" element={<Dashboard />} />
+          <Route path="/" element={<Scraper />} />
         </Routes>
       </div>
     </BrowserRouter>

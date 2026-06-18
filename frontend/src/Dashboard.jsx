@@ -58,7 +58,7 @@ const loadData = useCallback(async () => {
       if (latestVersion !== cachedVersion) {
         setIsLoading(true); // Bring back the spinner just for the heavy download
         
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/stores/`);
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/stores/`);
         const data = await response.json();
         const allResults = data.results || data;
 

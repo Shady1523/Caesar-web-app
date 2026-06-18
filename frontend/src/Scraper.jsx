@@ -42,7 +42,7 @@ function Scraper() {
   // Extracted into a useCallback so it can be re-called after each scrape
   const refreshScrapeStatus = useCallback(() => {
     setIsChecking(true);
-    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/check_scrape_status/`)
+    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/check_scrape_status/`)
       .then(res => {
         if (!res.ok) throw new Error("Server error");
         return res.json();
@@ -74,7 +74,7 @@ function Scraper() {
     setLocalData([]);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v2/`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ zip_code: zipCode })

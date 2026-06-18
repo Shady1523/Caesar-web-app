@@ -49,7 +49,7 @@ const loadData = useCallback(async () => {
 
   // Silently ask the server for the version
   try {
-    const versionRes = await fetch('/api/db_version/');
+    const versionRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/db_version/`);
     if (versionRes.ok) {
       const versionData = await versionRes.json();
       const latestVersion = String(versionData.latest_scraped_at);
@@ -58,7 +58,7 @@ const loadData = useCallback(async () => {
       if (latestVersion !== cachedVersion) {
         setIsLoading(true); // Bring back the spinner just for the heavy download
         
-        const response = await fetch('/api/v1/stores/');
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/stores/`);
         const data = await response.json();
         const allResults = data.results || data;
 
@@ -87,7 +87,7 @@ const handleRefresh = async () => {
 
   try {
     // 1. Ping the lightweight version endpoint FIRST
-    const versionRes = await fetch('/api/db_version/');
+    const versionRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/db_version/`);
     
     if (versionRes.ok) {
       const versionData = await versionRes.json();

@@ -6,6 +6,7 @@ class ScrapedStore(models.Model):
     item_name = models.CharField()
     item_price = models.FloatField()
     item_cal = models.FloatField()
+    store_id = models.CharField()
     scraped_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

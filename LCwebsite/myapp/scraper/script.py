@@ -10,7 +10,7 @@ from datetime import timedelta
 from django.utils import timezone
 import gc
 
-NUM_STORES_TO_SCRAPE = 3
+NUM_STORES_TO_SCRAPE = 5
 
 logger = logging.getLogger(__name__)
 def logging_setup():

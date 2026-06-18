@@ -34,7 +34,7 @@ USER_AGENTS = [
 ]
 
 #Timeout time for slower and faster page elements
-def timeout_slow(): return random.uniform(2.0, 2.5)
+def timeout_slow(): return random.uniform(4.0, 4.5)
 def timeout_fast(): return random.uniform(1.0, 2.2)
 
 #MAIN Function that is used to extract prices, calories, and food names from a given store.

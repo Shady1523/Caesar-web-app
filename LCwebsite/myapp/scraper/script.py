@@ -33,7 +33,7 @@ USER_AGENTS = [
 ]
 
 #Timeout time for slower and faster page elements
-def timeout_slow(): return random.uniform(2.0, 3.7)
+def timeout_slow(): return random.uniform(2.0, 2.5)
 def timeout_fast(): return random.uniform(1.0, 2.2)
 
 #MAIN Function that is used to extract prices, calories, and food names from a given store.
@@ -46,7 +46,7 @@ async def extract_product_prices(page, zip_code, address, store_id):
     menu = []
 
     #So that the page loads and the menu elements appear
-    await asyncio.sleep(2)
+    await asyncio.sleep(timeout_slow())
 
     menu_elements = await page.locator('xpath=//div[@role="group"]').filter(has_text=price_pattern).filter(has_text=calorie_pattern).filter(has_text=menu_pattern).all()
 
@@ -86,14 +86,22 @@ async def extract_product_prices(page, zip_code, address, store_id):
     else:
         logger.warning(f"No matches found.")
 
+#HELPER function that blocks heavy resources from loading to speed up the scraping process
+async def block_heavy_resources(route):
+    if route.request.resource_type in ["image", "stylesheet", "font", "media"]:
+        await route.abort()
+    else:
+        await route.continue_()
+
 #HELPER function that is used to launch the browser and page to avoid redundancy
 async def new_stealth_context(browser, **kwargs):
     context = await browser.new_context(
         user_agent=random.choice(USER_AGENTS),
-        viewport={"width": 1920, "height": 1080},
+        viewport={"width": 1024, "height": 768},
         **kwargs
     )
     page = await context.new_page()
+    await page.route("**/*", block_heavy_resources)
     return context, page
 
 #HELPER function used in "scrape_based_on_zip_code" main function that grabs every
@@ -152,10 +160,10 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
         logger.warning("Invalid Zip Code.")
         return
 
-    logger.info("Opening chromium.")
+    logger.info("Opening webkit.")
 
     async with Stealth().use_async(async_playwright()) as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.webkit.launch(headless=True)
         context, page = None, None
 
         try:

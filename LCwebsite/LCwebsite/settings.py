@@ -14,6 +14,10 @@ from pathlib import Path
 import os
 import dj_database_url
 from dotenv import load_dotenv
+import environ
+
+env = environ.Env()
+environ.Env.read_env()
 
 load_dotenv()
 
@@ -25,13 +29,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY')
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG') == 'False'
-
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
-
+DEBUG = env.bool('DEBUG', default=False)
 
 # Application definition
 
@@ -127,18 +128,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://pizzascanner.org",
-    "https://www.pizzascanner.org",
-    "https://api.pizzascanner.org",
-]
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost'])
 
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://pizzascanner.org",
-    "https://www.pizzascanner.org",
-    "https://api.pizzascanner.org",
-]
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
+
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
+
+CORS_ALLOW_CREDENTIALS = env.bool('CORS_ALLOW_CREDENTIALS', default=False)

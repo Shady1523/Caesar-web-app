@@ -9,7 +9,7 @@ from logging.handlers import RotatingFileHandler
 from datetime import timedelta
 from django.utils import timezone
 
-NUM_STORES_TO_SCRAPE = 5
+NUM_STORES_TO_SCRAPE = 3
 
 logger = logging.getLogger(__name__)
 def logging_setup():

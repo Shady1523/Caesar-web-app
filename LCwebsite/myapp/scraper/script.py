@@ -8,6 +8,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 from datetime import timedelta
 from django.utils import timezone
+import gc
 
 NUM_STORES_TO_SCRAPE = 3
 
@@ -207,15 +208,25 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
             elif tasks:
                 logger.debug(f"Firing off {len(tasks)} tasks at once.")
                 await asyncio.gather(*tasks)
+
+                gc.collect()
+                logger.debug("Garbage collection completed after scraping tasks.")
+
                 if zip_and_addresses:
                     return zip_and_addresses
 
         except Exception as e:
             logger.exception(f"The task failed: {e}")
         finally:
+            if page:
+                await page.close()
             if context:
                 await context.close()
-            await browser.close()
+            if browser:
+                await browser.close()
+            
+            gc.collect()
+            logger.debug("Garbage collection performed after browser cleanup.")
 
     logger.info("All tasks are completed.")
 

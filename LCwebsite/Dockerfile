@@ -19,4 +19,4 @@ RUN python -m playwright install webkit && \
 
 COPY . .
 
-CMD ["/bin/sh", "-c", "python manage.py migrate && gunicorn LCwebsite.wsgi:application --bind 0.0.0.0:8000"]
+CMD ["/bin/sh", "-c", "python manage.py migrate && gunicorn --config gunicorn.conf.py LCwebsite.wsgi:application"]

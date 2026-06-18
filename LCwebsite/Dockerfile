@@ -14,8 +14,8 @@ RUN pip install --upgrade pip
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN python -m playwright install webkit && \
-    python -m playwright install-deps webkit
+RUN python -m playwright install chromium && \
+    python -m playwright install-deps chromium
 
 COPY . .
 

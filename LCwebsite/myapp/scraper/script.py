@@ -161,10 +161,19 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
         logger.warning("Invalid Zip Code.")
         return
 
-    logger.info("Opening webkit.")
+    logger.info("Opening chromium.")
 
     async with Stealth().use_async(async_playwright()) as p:
-        browser = await p.webkit.launch(headless=True)
+        browser = await p.chromium.launch(headless=True, args=[
+        '--disable-gpu',
+        '--disable-dev-shm-usage',
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-accelerated-2d-canvas',
+        '--disable-accelerated-jpeg-decoding',
+        '--disable-accelerated-mjpeg-decode',
+        '--disable-accelerated-video-decode',
+    ])
         context, page = None, None
 
         try:

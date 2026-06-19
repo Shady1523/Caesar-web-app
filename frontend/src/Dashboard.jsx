@@ -280,7 +280,7 @@ const handleRefresh = async () => {
             <button 
               onClick={() => setVisibleCount(prev => prev + 100)}
               className="bg-orange-500 hover:bg-orange-600 text-slate-800 font-semibold py-2 px-6 rounded-lg shadow-md transition-colors">
-              Load 100 More
+              Load More
             </button>
           </div>
         )}

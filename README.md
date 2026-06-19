@@ -64,7 +64,7 @@ The backend serves data to the frontend via a Django REST framework API.
 ### Backend Setup
 1. Clone the repository:
 ```bash
-git clone [https://github.com/Shady1523/Caesar-web-app.git](https://github.com/Shady1523/Caesar-web-app.git)
+git clone https://github.com/Shady1523/Caesar-web-app.git
 ```
 
 2. Navigate to the backend directory and create a .env file with this exact information:

@@ -16,6 +16,13 @@ A full-stack web application that utilizes headless browser automation to scrape
 ## 📸 Previews
  ![Scraper View](https://github.com/user-attachments/assets/89777f86-ec0b-409c-bd2f-4d2e38ec98b9) | ![Database View](https://github.com/user-attachments/assets/d997a6cc-d2fa-4279-94e8-527a85d1316c)
 
+## 💡 The Inspiration
+I originally conceived this project to solve a personal frustration. As a budget-conscious student, I would manually check different Little Caesars locations to find the best prices. However, the official website's UI requires repetitive zip-code entries and frequently resets user sessions, making comparisons incredibly tedious. 
+
+When I searched for an existing tool, I realized no tool existed that could track live, dynamic pricing across different store locations. 
+
+I decided to build my own solution. What started as an idea to automate a repetitive manual task evolved into this full-stack, distributed web application designed to make fast, session-cached price comparisons between multiple Little Caesars restaurants located within the user's entered zip code.
+
 ## ✨ Features
 * **Automated Data Extraction:** Built with Python and Playwright to navigate complex dynamic UIs and extract live pricing, calorie, item name, and location data.
 * **Interactive Dashboard:** A mobile-responsive React frontend featuring client-side pagination and real-time filtering/sorting by item name, maximum price, and maximum calories.

@@ -211,8 +211,8 @@ const handleRefresh = async () => {
               Refresh Data
             </button>
             {statusMsg.text && (
-              <div className={`p-2 rounded-lg shadow-sm text-sm font-medium
-              ${statusMsg.type === 'success' ? 'bg-orange-400 text-red-800' : 'bg-orange-400 text-black'}`}>
+              <div className={`px-4 py-2.5 rounded-lg shadow-sm text-sm font-medium
+              ${statusMsg.type === 'success' ? 'bg-orange-400 text-red-800' : 'bg-orange-300 text-black'}`}>
               {statusMsg.text}
               </div>
             )}

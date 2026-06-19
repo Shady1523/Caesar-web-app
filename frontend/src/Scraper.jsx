@@ -6,6 +6,7 @@ function Scraper() {
   const [localData, setLocalData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState({ text: "", type: "" });
+  const [websiteLink, setWebsiteLink] = useState("");
 
   // --- FILTER STATE ---
   const [filterLocation, setFilterLocation] = useState("");
@@ -110,6 +111,7 @@ function Scraper() {
     }
   };
 
+  // --- FILTERING LOGIC (applied before sorting and rendering) ---
   const filteredLocalData = localData.filter(item => {
     const matchesLocation = filterLocation === "" || item.zip_and_address.toLowerCase().includes(filterLocation.toLowerCase());
     const matchesName = filterName === "" || item.item_name.toLowerCase().includes(filterName.toLowerCase());
@@ -121,6 +123,8 @@ function Scraper() {
     return matchesLocation && matchesName && matchesPrice && matchesCalories;
   });
 
+
+  // --- CLEAR FUNCTION (resets everything to initial state) ---
   const handleClear = () => {
     setLocalData([]);
     setZipCode("");
@@ -140,6 +144,7 @@ function Scraper() {
     setCanScrollRight(true);
   };
 
+  // --- SORTING LOGIC ---
   const finalDataToRender = [...filteredLocalData].sort((a, b) => {
     if (!sortConfig.key) return 0;
 
@@ -162,6 +167,7 @@ function Scraper() {
     return 0;
   });
 
+  // --- SORTING HANDLER (toggles asc/desc on repeated clicks) ---
   const handleSort = (key) => {
     let direction = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -235,7 +241,7 @@ function Scraper() {
 
   // --- BUTTON LABEL LOGIC ---
   const getScanButtonLabel = () => {
-    if (loading) return "Scraping Server...";
+    if (loading) return "Scanning...";
     if (isChecking) return "Checking limits...";
     if (!canScrape) return "Daily Limit Reached";
     return "Initialize Scan";
@@ -350,8 +356,7 @@ const finalFilteredData = dashboardData.filter((item) => {
                 ref={scrollRef}
                 onScroll={updateArrows}
                 className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory"
-                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-              >
+                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
                 {restaurantCards.map((restaurant, index) => {
                   const sum = restaurant.items.reduce((total, i) => total + (parseFloat(i.item_price) || 0), 0);
                   const averagePrice = sum / restaurant.items.length;
@@ -364,6 +369,7 @@ const finalFilteredData = dashboardData.filter((item) => {
                           onClick={() => {
                             setSortConfig({ key: null, direction: 'asc' });
                             setSelectedRestaurant(restaurant.zip_and_address);
+                            setWebsiteLink("https://littlecaesars.com/en-us/order/pickup/stores/" + restaurant.items[0].store_id + "/menu/");
                           }}
                           className="text-left w-full bg-orange-500 px-4 pt-4 pb-3 border-b border-orange-600 group focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-700"
                         >
@@ -413,7 +419,7 @@ const finalFilteredData = dashboardData.filter((item) => {
                               <circle cx="12" cy="12" r="10" />
                               <path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20" />
                             </svg>
-                            <span>Visit website</span>
+                            <span>Order from this location</span>
                             <svg className="w-3 h-3 shrink-0 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
                             </svg>
@@ -463,6 +469,26 @@ const finalFilteredData = dashboardData.filter((item) => {
               </button>
               <div className="w-px h-4 bg-slate-300" />
               <span className="text-sm font-semibold text-slate-700 truncate">{selectedRestaurant}</span>
+            </div>
+
+            {/* Website link */}
+            <div className="px-4 py-3 border-t border-slate-100">
+              <a
+                href={websiteLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-orange-500 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20" />
+                </svg>
+                <span>Order from this location</span>
+                <svg className="w-3 h-3 shrink-0 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
+                </svg>
+              </a>
             </div>
 
             {/* THE FILTER PANEL */}

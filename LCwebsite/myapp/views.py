@@ -66,7 +66,7 @@ def scraper_api(request):
 
             return JsonResponse({
                 "status": "success",
-                "message": f"Successfully scraped {total_stores} stores.",
+                "message": f"Successfully fetched {total_stores} stores.",
                 "results": scraped_items_list
             })
         except Exception as e:

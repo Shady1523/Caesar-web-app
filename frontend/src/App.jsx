@@ -16,7 +16,7 @@ function App() {
             <div className="flex h-16 items-center justify-between">
 
               <div className="flex items-center">
-                  <div className="shrink-0 text-white text-shadow-[2px_2px_2px_rgba(0,0,0,0.75)]">
+                  <div className="shrink-0 text-orange-900 font-bold text-2xl">
                     <h1>LCPIZZA TRACKER</h1>
                   </div>
                   <div className="hidden md:block">

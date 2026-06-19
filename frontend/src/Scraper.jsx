@@ -266,15 +266,15 @@ const finalFilteredData = dashboardData.filter((item) => {
 });
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8 font-sans">
+    <div className="min-h-screen bg-slate-50 p-8 font-sans overflow-x-hidden">
       <div className="max-w-6xl mx-auto">
 
         {/* --- THE COMMAND CENTER --- */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 w-full max-w-4xl mx-auto">
           <h2
             className="shadow-md shadow-orange-500 text-center text-6xl text-black p-12 aspect-10/2 rounded-2xl overflow-hidden
             bg-[url('https://images.unsplash.com/photo-1611915365928-565c527a0590?q=80&w=1025&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')]
-            bg-cover bg-[60%_20%] bg-no-repeat w-auto h-auto">
+            bg-cover bg-[60%_20%] bg-no-repeat max-w-full h-auto">
           </h2>
 
           <p className="pt-8 my-3 font-serif text-xl text-slate-800">Scanning Tool</p>

@@ -162,7 +162,7 @@ const handleRefresh = async () => {
 
   // --- RENDER HTML ---
   return (
-    <div className="min-h-screen bg-slate-50 p-8 font-sans">
+    <div className="min-h-screen bg-slate-50 p-8 font-sans overflow-x-hidden">
       <div className="max-w-6xl mx-auto">
         
         {/* HEADER */}

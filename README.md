@@ -12,7 +12,7 @@ A full-stack web application that utilizes headless browser automation to scrape
 ---
 
 ## 📸 Previews
-![Database View](https://github.com/user-attachments/assets/d997a6cc-d2fa-4279-94e8-527a85d1316c) | ![Scraper View](https://github.com/user-attachments/assets/b68da43b-d04f-4279-bf43-b9f76fd54f2b)
+ ![Scraper View](https://github.com/user-attachments/assets/b68da43b-d04f-4279-bf43-b9f76fd54f2b) | ![Database View](https://github.com/user-attachments/assets/d997a6cc-d2fa-4279-94e8-527a85d1316c)
 
 ## ✨ Features
 * **Automated Data Extraction:** Built with Python and Playwright to navigate complex dynamic UIs and extract live pricing, calorie, item name, and location data.
@@ -52,30 +52,42 @@ The backend serves data to the frontend via a Django REST framework API.
 
 ### Backend Setup
 1. Clone the repository:
-   '''git clone https://github.com/Shady1523/Caesar-web-app.git'''
+   ```Bash
+   git clone https://github.com/Shady1523/Caesar-web-app.git
+   ```
 
 2. Navigate to the backend directory and create a .env file with this exact information:
-   '''
+   ```Code Snippet
    DEBUG=True
    ALLOWED_HOSTS=localhost,127.0.0.1
    CORS_ALLOWED_ORIGINS=http://localhost:5173
    CSRF_TRUSTED_ORIGINS=http://localhost:5173
    SECRET_KEY=[your_generated_django_secret_key_here]
    DATABASE_URL=[your_postgres_database_url_here]
-   '''
+   ```
 
 3. Build and run the Docker containers:
-   '''docker compose up --build'''
+   ```Bash
+   docker compose up --build
+   ```
 
 ### Frontend Setup
 1. Navigate to the frontend directory:
-   '''cd frontend'''
+   ```Bash
+   cd frontend
+   ```
 
 2. Install dependencies:
-   '''npm install'''
+   ```Bash
+   npm install
+   ```
 
 3. Create a .env file for your API URL:
-   '''VITE_API_BASE_URL=http://localhost:8000/'''
+   ```Code Snippet
+   VITE_API_BASE_URL=http://localhost:8000/
+   ```
 
 4. Start the development server:
-   '''npm run dev'''
+   ```Bash
+   npm run dev
+   ```

@@ -14,7 +14,7 @@ A full-stack web application that utilizes headless browser automation to scrape
 ---
 
 ## 📸 Previews
- ![Scraper View](https://github.com/user-attachments/assets/b68da43b-d04f-4279-bf43-b9f76fd54f2b) | ![Database View](https://github.com/user-attachments/assets/d997a6cc-d2fa-4279-94e8-527a85d1316c)
+ ![Scraper View](https://github.com/user-attachments/assets/89777f86-ec0b-409c-bd2f-4d2e38ec98b9) | ![Database View](https://github.com/user-attachments/assets/d997a6cc-d2fa-4279-94e8-527a85d1316c)
 
 ## ✨ Features
 * **Automated Data Extraction:** Built with Python and Playwright to navigate complex dynamic UIs and extract live pricing, calorie, item name, and location data.

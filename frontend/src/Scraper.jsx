@@ -241,6 +241,24 @@ function Scraper() {
     return "Initialize Scan";
   };
 
+// --- FINAL FILTERING LOGIC APPLIED TO DASHBOARD DATA (after sorting) ---
+const finalFilteredData = dashboardData.filter((item) => {
+  
+  const matchesName = filterName === "" || 
+    item.item_name.toLowerCase().includes(filterName.toLowerCase());
+
+  const matchesLocation = filterLocation === "" || 
+    item.zip_and_address.toLowerCase().includes(filterLocation.toLowerCase());
+
+  const matchesPrice = filterMaxPrice === "" || 
+    parseFloat(item.item_price) <= parseFloat(filterMaxPrice);
+
+  const matchesCalories = filterMaxCalories === "" || 
+    parseFloat(item.item_cal) <= parseFloat(filterMaxCalories);
+
+  return matchesName && matchesLocation && matchesPrice && matchesCalories;
+});
+
   return (
     <div className="min-h-screen bg-slate-50 p-8 font-sans">
       <div className="max-w-6xl mx-auto">
@@ -505,7 +523,7 @@ function Scraper() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-black bg-orange-500">
-                    {dashboardData.map((item, index) => (
+                    {finalFilteredData.map((item, index) => (
                       <tr key={index} className="hover:bg-orange-400 transition-colors duration-200">
                         <td className="px-6 py-4 text-sm text-black">{item.zip_and_address}</td>
                         <td className="px-6 py-4 text-sm text-black">{item.item_name}</td>

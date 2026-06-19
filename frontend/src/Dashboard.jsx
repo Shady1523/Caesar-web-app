@@ -16,6 +16,13 @@ function Dashboard() {
 
   // Added Sorting State
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  // Pagination State
+  const [visibleCount, setVisibleCount] = useState(100);
+
+// Reset the visible count back to 100 anytime a filter changes
+  useEffect(() => {
+    setVisibleCount(100);
+  }, [itemNameStr, locationStr, maxPrice, maxCalories]);
 
 // --- REAL-TIME CLIENT-SIDE FILTER ---
   useEffect(() => {
@@ -249,7 +256,7 @@ const handleRefresh = async () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-black bg-orange-500">
-                    {sortedPizzas.map((item, index) => (
+                    {sortedPizzas.slice(0, visibleCount).map((item, index) => (
                       <tr key={index} className="hover:bg-orange-400 transition-colors duration-200">
                         <td className="px-6 py-4 text-sm text-black">{item.zip_and_address}</td>
                         <td className="px-6 py-4 text-sm text-black">{item.item_name}</td>
@@ -259,6 +266,16 @@ const handleRefresh = async () => {
                     ))}
                   </tbody>
                 </table>
+                {/* Load more button for pagination */}
+                {visibleCount < sortedPizzas.length && (
+                  <div className="flex justify-center mt-6 mb-12">
+                    <button 
+                      onClick={() => setVisibleCount(prev => prev + 100)}
+                      className="bg-orange-500 hover:bg-orange-600 text-slate-800 font-semibold py-2 px-6 rounded-lg shadow-md transition-colors">
+                      Load 100 More
+                    </button>
+                  </div>
+                )}
             
             {sortedPizzas.length === 0 && (
               <div className="p-8 text-center text-black bg-slate-50 rounded-b-xl border-t border-slate-200">

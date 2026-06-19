@@ -266,16 +266,6 @@ const handleRefresh = async () => {
                     ))}
                   </tbody>
                 </table>
-                {/* Load more button for pagination */}
-                {visibleCount < sortedPizzas.length && (
-                  <div className="flex justify-center mt-6 mb-12">
-                    <button 
-                      onClick={() => setVisibleCount(prev => prev + 100)}
-                      className="bg-orange-500 hover:bg-orange-600 text-slate-800 font-semibold py-2 px-6 rounded-lg shadow-md transition-colors">
-                      Load 100 More
-                    </button>
-                  </div>
-                )}
             
             {sortedPizzas.length === 0 && (
               <div className="p-8 text-center text-black bg-slate-50 rounded-b-xl border-t border-slate-200">
@@ -284,7 +274,16 @@ const handleRefresh = async () => {
             )}
           </div>
         </div>
-
+        {/* Load more button for pagination */}
+        {visibleCount < sortedPizzas.length && (
+          <div className="flex justify-center mt-6 mb-12">
+            <button 
+              onClick={() => setVisibleCount(prev => prev + 100)}
+              className="bg-orange-500 hover:bg-orange-600 text-slate-800 font-semibold py-2 px-6 rounded-lg shadow-md transition-colors">
+              Load 100 More
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -8,7 +8,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.cache import cache
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+import logging
 
+logger = logging.getLogger(__name__)
 
 # Create your views here.
 
@@ -50,21 +52,26 @@ def scraper_api(request):
             target_zip = body_data.get("zip_code") 
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON format"}, status=400)
+    
+        try:
 
-        locations_to_query = async_to_sync(script.scrape_based_on_zip_code)("https://littlecaesars.com/en-us/", target_zip, True)
+            locations_to_query = async_to_sync(script.scrape_based_on_zip_code)("https://littlecaesars.com/en-us/", target_zip, True)
 
-        cache.set(f"scrape_count_{ip}", count + 1, timeout=86400)
+            cache.set(f"scrape_count_{ip}", count + 1, timeout=86400)
 
-        scraped_items_queryset = ScrapedStore.objects.filter(zip_and_address__in=locations_to_query)
-        scraped_items_list = list(scraped_items_queryset.values('zip_and_address', 'item_name', 'item_price', 'item_cal', 'store_id'))
-        
-        total_stores = scraped_items_queryset.values('zip_and_address').distinct().count()
+            scraped_items_queryset = ScrapedStore.objects.filter(zip_and_address__in=locations_to_query)
+            scraped_items_list = list(scraped_items_queryset.values('zip_and_address', 'item_name', 'item_price', 'item_cal', 'store_id'))
+            
+            total_stores = scraped_items_queryset.values('zip_and_address').distinct().count()
 
-        return JsonResponse({
-            "status": "success",
-            "message": f"Successfully scraped {total_stores} stores.",
-            "results": scraped_items_list
-        })
+            return JsonResponse({
+                "status": "success",
+                "message": f"Successfully scraped {total_stores} stores.",
+                "results": scraped_items_list
+            })
+        except Exception as e:
+                logger.exception("Scraper failed") 
+                return JsonResponse({'error': str(e)}, status=500)
 
     return JsonResponse({"error": "Method not allowed. Use POST."}, status=405)
 

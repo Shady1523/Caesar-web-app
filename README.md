@@ -6,6 +6,7 @@
 ![PostgreSQL](https://img.shields.io/badge/postgresql-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
 ![Playwright](https://img.shields.io/badge/playwright-%232EAD33.svg?style=for-the-badge&logo=playwright&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)
 
 A full-stack web application that utilizes headless browser automation to scrape, store, and filter menu items, prices, and nutritional data from Little Caesars locations based on user-provided zip codes.
 
@@ -32,6 +33,7 @@ I decided to build my own solution. What started as an idea to automate a repeti
 ## ☁️ Deployment Architecture
 * **Frontend Hosting:** Deployed globally via Vercel for fast edge content delivery.
 * **Backend Server:** Hosted on an Amazon Web Services (AWS) EC2 instance running Ubuntu Linux.
+* **CI/CD Pipeline:** Fully automated zero-downtime deployment pipeline built with GitHub Actions, utilizing secure SSH key injections to trigger live Docker container rebuilds on AWS upon every code push.
 * **Containerization:** The Django application, Gunicorn WSGI server, and Playwright Chromium binaries are fully containerized using Docker.
 * **Proxy & Security:** Nginx is used as a reverse proxy to handle incoming requests, enforce HTTPS, and manage CORS headers between the Vercel frontend and AWS backend.
 * **Memory Management:** Configured with a 4GB SSD Swap file to prevent Linux Out-Of-Memory (OOM) errors during heavy browser automation tasks.
@@ -49,7 +51,7 @@ The backend serves data to the frontend via a Django REST framework API.
 ## 💻 Tech Stack
 * **Frontend:** React, Vite, Tailwind CSS, React Router
 * **Backend:** Python, Django REST Framework, Playwright (Headless Chromium), PostgreSQL, AWS RDS
-* **Infrastructure & Deployment:** Docker, Docker Compose, Gunicorn, AWS EC2, Vercel, Nginx
+* **Infrastructure & Deployment:** Docker, Docker Compose, GitHub Actions (CI/CD), Gunicorn, AWS EC2, Vercel, Nginx
 
 ---
 
@@ -61,9 +63,9 @@ The backend serves data to the frontend via a Django REST framework API.
 
 ### Backend Setup
 1. Clone the repository:
-   ```Bash
-   git clone https://github.com/Shady1523/Caesar-web-app.git
-   ```
+```bash
+git clone [https://github.com/Shady1523/Caesar-web-app.git](https://github.com/Shady1523/Caesar-web-app.git)
+```
 
 2. Navigate to the backend directory and create a .env file with this exact information:
    ```Code Snippet

@@ -347,7 +347,7 @@ const finalFilteredData = dashboardData.filter((item) => {
         {loading && (
           <div className="w-[90%] sm:w-full max-w-4xl mx-auto bg-slate-200 rounded-full h-3 mb-6 overflow-hidden shadow-inner">
             <div 
-              className="bg-orange-500 h-3 rounded-full transition-all duration-300 ease-out" 
+              className="bg-orange-500 h-3 rounded-full transition-all duration-450 ease-out" 
               style={{ width: `${progress}%` }}
             ></div>
           </div>

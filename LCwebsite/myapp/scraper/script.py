@@ -16,7 +16,7 @@ CALORIE_PATTERN = re.compile(r"\d{3,4}\s*Cal(?:ories)?", re.IGNORECASE)
 MENU_PATTERN = re.compile( r'^.+?(?=\s*\d+\s*Cal)', re.IGNORECASE)
 
 #Number of allowed concurrent scrapers
-NUM_SEMAPHORE = 3
+NUM_SEMAPHORE = 2
 
 #Number of stores to scrape
 NUM_STORES_TO_SCRAPE = 5

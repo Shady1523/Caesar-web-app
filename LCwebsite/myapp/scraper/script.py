@@ -112,7 +112,9 @@ async def new_stealth_context(browser, **kwargs):
 async def url_scraper(page, NUMBER_OF_STORES_TO_SCRAPE):
 
     stores_to_scrape = []
-
+    
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    await asyncio.sleep(timeout_fast())
     ul_with_store_ids = await page.get_by_test_id("locator__storeslist").locator("li").all()
     logger.debug(f"Found {len(ul_with_store_ids)} stores near the given zip code")
 
@@ -184,9 +186,8 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
             await page.goto(f"{website}order/pickup/")
             await asyncio.sleep(timeout_fast())
             await page.fill("//input[@type='text']", zip_code)
-            await asyncio.sleep(timeout_slow())
+            await asyncio.sleep(timeout_fast())
             await page.get_by_text(zip_code).click()
-            await asyncio.sleep(timeout_slow())
 
             stores_to_scrape = await url_scraper(page, NUM_STORES_TO_SCRAPE)
             if not stores_to_scrape:

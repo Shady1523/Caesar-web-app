@@ -153,7 +153,7 @@ async def process_store_directly(browser, url_to_scrape, zip_code, address, stor
 
     finally:
         if context:
-            await asyncio.wait_for(context.close(), timeout=0.3)
+            await asyncio.wait_for(context.close(), timeout=1.0)
 
 #MAIN function that opens a browser to scrape multiple stores near a given zip_code.
 async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
@@ -233,11 +233,11 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
             logger.exception(f"The task failed: {e}")
         finally:
             if page:
-                await asyncio.wait_for(page.close(), timeout=0.3)
+                await asyncio.wait_for(page.close(), timeout=1.0)
             if context:
-                await asyncio.wait_for(context.close(), timeout=0.3)
+                await asyncio.wait_for(context.close(), timeout=1.0)
             if browser:
-                await asyncio.wait_for(browser.close(), timeout=0.3)
+                await asyncio.wait_for(browser.close(), timeout=1.0)
             
             gc.collect()
             logger.debug("Garbage collection performed after browser cleanup.")

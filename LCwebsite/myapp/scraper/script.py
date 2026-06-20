@@ -116,18 +116,21 @@ async def url_scraper(page, NUMBER_OF_STORES_TO_SCRAPE):
     ul_with_store_ids = await page.get_by_test_id("locator__storeslist").locator("li").all()
     logger.debug(f"Found {len(ul_with_store_ids)} stores near the given zip code")
 
-    for store in ul_with_store_ids[:NUMBER_OF_STORES_TO_SCRAPE]:
-        store_id = await store.get_attribute("data-testid")
-        if store_id:
-            store_id = store_id.split("-")[-1]
-            store_url = f"https://littlecaesars.com/en-us/order/pickup/stores/{store_id}/menu/"
-            zip_code_field = await store.get_by_test_id(f"locator__cityStateZip-{store_id}").inner_text()
-            zip_code = zip_code_field.split()[-1]
-            address = await store.get_by_test_id(f"locator__streetAddress-{store_id}").inner_text()
-            stores_to_scrape.append((zip_code, store_url, address, store_id))
-            logger.info(f"Store {store_id} was successfully added.")
-        else:
-            logger.warning("The store id for this store was not found.")
+    if ul_with_store_ids is not None:
+        for store in ul_with_store_ids[:NUMBER_OF_STORES_TO_SCRAPE]:
+            store_id = await store.get_attribute("data-testid")
+            if store_id:
+                store_id = store_id.split("-")[-1]
+                store_url = f"https://littlecaesars.com/en-us/order/pickup/stores/{store_id}/menu/"
+                zip_code_field = await store.get_by_test_id(f"locator__cityStateZip-{store_id}").inner_text()
+                zip_code = zip_code_field.split()[-1]
+                address = await store.get_by_test_id(f"locator__streetAddress-{store_id}").inner_text()
+                stores_to_scrape.append((zip_code, store_url, address, store_id))
+                logger.info(f"Store {store_id} was successfully added.")
+            else:
+                logger.warning("The store id for this store was not found.")
+    else:
+        logger.warning("No stores found.")
 
     logger.info(f"Successfully extracted {len(stores_to_scrape)} store urls.")
 
@@ -150,7 +153,7 @@ async def process_store_directly(browser, url_to_scrape, zip_code, address, stor
 
     finally:
         if context:
-            await asyncio.wait_for(context.close(), timeout=3.0)
+            await asyncio.wait_for(context.close(), timeout=0.3)
 
 #MAIN function that opens a browser to scrape multiple stores near a given zip_code.
 async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
@@ -196,18 +199,22 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
             #only useful when check_if_in_db is True
             zip_and_addresses = []
 
-            for store in stores_to_scrape:
-                store_identifier = f"{store[0]} | {store[2]}"
-                if check_if_in_db:
-                    fresh_entry = await ScrapedStore.objects.filter(zip_and_address__icontains=store_identifier, scraped_at__gte=timezone.now()-timedelta(days=7)).aexists()
-                    if fresh_entry:
-                        zip_and_addresses.append(store_identifier)
+            if stores_to_scrape is not None:
+                for store in stores_to_scrape:
+                    store_identifier = f"{store[0]} | {store[2]}"
+                    if check_if_in_db:
+                        fresh_entry = await ScrapedStore.objects.filter(zip_and_address__icontains=store_identifier, scraped_at__gte=timezone.now()-timedelta(days=7)).aexists()
+                        if fresh_entry:
+                            zip_and_addresses.append(store_identifier)
+                        else:
+                            await ScrapedStore.objects.filter(zip_and_address__icontains=store_identifier).adelete()
+                            tasks.append(process_store_directly(browser, store[1], store[0], store[2], store[3]))
+                            zip_and_addresses.append(store_identifier)
                     else:
-                        await ScrapedStore.objects.filter(zip_and_address__icontains=store_identifier).adelete()
                         tasks.append(process_store_directly(browser, store[1], store[0], store[2], store[3]))
-                        zip_and_addresses.append(store_identifier)
-                else:
-                    tasks.append(process_store_directly(browser, store[1], store[0], store[2], store[3]))
+            else:
+                logger.warning("No stores to scrape.")
+                return
             
             if zip_and_addresses and not tasks:
                 return zip_and_addresses
@@ -226,11 +233,11 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
             logger.exception(f"The task failed: {e}")
         finally:
             if page:
-                await asyncio.wait_for(page.close(), timeout=1.0)
+                await asyncio.wait_for(page.close(), timeout=0.3)
             if context:
-                await asyncio.wait_for(context.close(), timeout=1.0)
+                await asyncio.wait_for(context.close(), timeout=0.3)
             if browser:
-                await asyncio.wait_for(browser.close(), timeout=1.0)
+                await asyncio.wait_for(browser.close(), timeout=0.3)
             
             gc.collect()
             logger.debug("Garbage collection performed after browser cleanup.")

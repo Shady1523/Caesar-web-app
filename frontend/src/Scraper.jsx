@@ -241,7 +241,7 @@ function Scraper() {
 
   // --- BUTTON LABEL LOGIC ---
   const getScanButtonLabel = () => {
-    if (loading) return "Scanning... (~20 seconds)";
+    if (loading) return "Scanning... (~20-50 seconds)";
     if (isChecking) return "Checking limits...";
     if (!canScrape) return "Daily Limit Reached";
     return "Initialize Scan";

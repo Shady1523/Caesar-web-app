@@ -48,7 +48,7 @@ function Scraper() {
       setProgress(0);
       interval = setInterval(() => {
         setProgress((prev) => (prev >= 95 ? 95 : prev + 1));
-      }, 300); // Increments every 300ms
+      }, 420);
     } else {
       setProgress(100);
     }

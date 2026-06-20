@@ -181,7 +181,7 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
             await page.goto(f"{website}order/pickup/")
             await asyncio.sleep(timeout_fast())
             await page.fill("//input[@type='text']", zip_code)
-            await asyncio.sleep(timeout_fast())
+            await asyncio.sleep(timeout_slow())
             await page.get_by_text(zip_code).click()
             await asyncio.sleep(timeout_slow())
 
@@ -226,11 +226,11 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
             logger.exception(f"The task failed: {e}")
         finally:
             if page:
-                await asyncio.wait_for(page.close(), timeout=3.0)
+                await asyncio.wait_for(page.close(), timeout=1.0)
             if context:
-                await asyncio.wait_for(context.close(), timeout=3.0)
+                await asyncio.wait_for(context.close(), timeout=1.0)
             if browser:
-                await asyncio.wait_for(browser.close(), timeout=3.0)
+                await asyncio.wait_for(browser.close(), timeout=1.0)
             
             gc.collect()
             logger.debug("Garbage collection performed after browser cleanup.")

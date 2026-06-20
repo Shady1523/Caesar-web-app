@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 function Dashboard() {
   // --- STATE ---
@@ -18,6 +18,15 @@ function Dashboard() {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   // Pagination State
   const [visibleCount, setVisibleCount] = useState(100);
+
+  // --- ADDED FEATURE: UNIQUE RESTAURANT COUNT ---
+  const uniqueRestaurantCount = useMemo(() => {
+    if (!allPizzas || allPizzas.length === 0) return 0;
+    // Using Set to instantly filter out duplicate locations
+    const uniqueStores = new Set(allPizzas.map(item => item.zip_and_address));
+    return uniqueStores.size;
+  }, [allPizzas]);
+  // ----------------------------------------------
 
 // Reset the visible count back to 100 anytime a filter changes
   useEffect(() => {
@@ -175,6 +184,9 @@ const handleRefresh = async () => {
         <div className="bg-orange-600 p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
           <div className="flex justify-between items-center mb-4">  
             <h3 className="text-lg font-semibold text-black mb-4">Search Parameters</h3>
+              <span className="text-sm font-medium text-black px-3 py-1 rounded-full italic">
+                {uniqueRestaurantCount} locations are currently in the database
+              </span>
               <span className="text-sm font-medium text-black bg-orange-400 px-3 py-1 rounded-full">
                 Showing {pizzas.length} of {allPizzas.length} items
               </span>

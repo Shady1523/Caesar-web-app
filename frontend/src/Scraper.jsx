@@ -39,6 +39,23 @@ function Scraper() {
     }
   }, []);
 
+// --- ADDED FEATURE: PROGRESS BAR STATE ---
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    let interval;
+    if (loading) {
+      setProgress(0);
+      interval = setInterval(() => {
+        setProgress((prev) => (prev >= 95 ? 95 : prev + 1));
+      }, 300); // Increments every 300ms
+    } else {
+      setProgress(100);
+    }
+    return () => clearInterval(interval);
+  }, [loading]);
+  // ------------------------------------------
+
   // --- SCRAPE LIMIT CHECK ---
   // Extracted into a useCallback so it can be re-called after each scrape
   const refreshScrapeStatus = useCallback(() => {
@@ -241,7 +258,7 @@ function Scraper() {
 
   // --- BUTTON LABEL LOGIC ---
   const getScanButtonLabel = () => {
-    if (loading) return "Scanning... (~20-50 seconds)";
+    if (loading) return "Scanning...";
     if (isChecking) return "Checking limits...";
     if (!canScrape) return "Daily Limit Reached";
     return "Initialize Scan";
@@ -325,6 +342,17 @@ const finalFilteredData = dashboardData.filter((item) => {
             )}
           </div>
         </div>
+
+        {/* --- UPDATED FEATURE: RESPONSIVE LOADING BAR UI --- */}
+        {loading && (
+          <div className="w-[90%] sm:w-full max-w-4xl mx-auto bg-slate-200 rounded-full h-3 mb-6 overflow-hidden shadow-inner">
+            <div 
+              className="bg-orange-500 h-3 rounded-full transition-all duration-300 ease-out" 
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+        )}
+        {/* -------------------------------------------------- */}
 
         {/* --- STATUS MESSAGES --- */}
         {statusMsg.text && (

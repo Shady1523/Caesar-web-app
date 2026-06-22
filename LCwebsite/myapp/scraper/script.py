@@ -62,65 +62,70 @@ async def extract_product_prices(page, zip_code):
 
     except PlaywrightTimeoutError:
         logger.warning(f"Menu items failed to load for {zip_code} within 15 seconds.")
-        return
+        return []
 
     return menu_texts
 
 #HELPER function that saves the scraped menu items to the database
-async def database_save(raw_menu_items, zip_and_addresses, store_ids):
-    if zip_and_addresses:
-        for i in range(len(zip_and_addresses)):
-            zip_and_address = zip_and_addresses[i]
-            store_id = store_ids[i]
-            raw_menu = raw_menu_items[i]
-
-            try:
-                saved_count = 0
-
-                data_to_update = []
-
-                for item in raw_menu:
-                    price_match = PRICE_PATTERN.search(item)
-                    cal_match = CALORIE_PATTERN.search(item)
-                    name_match = MENU_PATTERN.search(item)
-
-                    if not all([price_match, cal_match, name_match]):
-                        logging.warning(f"Skipping malformed item: {item[:80]}")
-                        continue
-
-                    price = price_match.group()
-                    cal = cal_match.group()
-                    
-                    clean_price = float(price.replace("$", "").strip())
-                    clean_cal = float(cal.split()[0])
-                    name = name_match.group().strip()
-
-                    data_object = ScrapedStore(
-                        zip_and_address = zip_and_address,
-                        item_name = name,
-                        item_price = clean_price,
-                        item_cal = clean_cal,
-                        store_id = store_id
-                    )
-
-                    saved_count += 1
-                    data_to_update.append(data_object)
-
-                if data_to_update:
-                    await ScrapedStore.objects.abulk_create(
-                        data_to_update,
-                        update_conflicts = True,
-                        unique_fields = ["zip_and_address", "item_name"],
-                        update_fields = ["item_price", "item_cal", "store_id"]
-                    )
-
-                logger.info(f"Successfully processed and saved {saved_count} items for store {zip_and_address}.")
-            
-            except Exception as e:
-                logger.warning(f"Database save failed for {zip_and_address}: {e}")
-
-    else:
+async def database_save(successful_scrapes):
+    if not successful_scrapes:
         logger.warning("No zip codes provided for database save.")
+        return []
+
+    for store_data in successful_scrapes:
+
+        if not store_data:
+            logger.warning("Skipping empty store data.")
+            continue
+
+        zip_and_address = store_data["zip_and_address"]
+        store_id = store_data["store_id"]
+        raw_data = store_data["raw_menu_items"]
+
+        try:
+            saved_count = 0
+
+            data_to_update = []
+
+            for item in raw_data:
+                price_match = PRICE_PATTERN.search(item)
+                cal_match = CALORIE_PATTERN.search(item)
+                name_match = MENU_PATTERN.search(item)
+
+                if not all([price_match, cal_match, name_match]):
+                    logging.warning(f"Skipping malformed item: {item[:80]}")
+                    continue
+
+                price = price_match.group()
+                cal = cal_match.group()
+                
+                clean_price = float(price.replace("$", "").strip())
+                clean_cal = float(cal.split()[0])
+                name = name_match.group().strip()
+
+                data_object = ScrapedStore(
+                    zip_and_address = zip_and_address,
+                    item_name = name,
+                    item_price = clean_price,
+                    item_cal = clean_cal,
+                    store_id = store_id
+                )
+
+                saved_count += 1
+                data_to_update.append(data_object)
+
+            if data_to_update:
+                await ScrapedStore.objects.abulk_create(
+                    data_to_update,
+                    update_conflicts = True,
+                    unique_fields = ["zip_and_address", "item_name"],
+                    update_fields = ["item_price", "item_cal", "store_id"]
+                )
+
+            logger.info(f"Successfully processed and saved {saved_count} items for store {zip_and_address}.")
+        
+        except Exception as e:
+            logger.warning(f"Database save failed for {zip_and_address}: {e}")
 
 #HELPER function that blocks heavy resources from loading to speed up the scraping process
 async def block_heavy_resources(route):
@@ -134,6 +139,8 @@ async def new_stealth_context(browser, **kwargs):
     context = await browser.new_context(
         user_agent=random.choice(USER_AGENTS),
         viewport={"width": 1024, "height": 768},
+        locale="en-US", permissions=[], ignore_https_errors=True,
+        extra_http_headers={"Accept-Language": "en-US,en;q=0.9"},
         **kwargs
     )
     page = await context.new_page()
@@ -149,7 +156,7 @@ async def url_scraper(page, NUMBER_OF_STORES_TO_SCRAPE):
     stores_to_scrape = []
 
     try:
-        await page.wait_for_url("**/menu/**", timeout=2500)
+        await page.wait_for_url("**/menu/**", timeout=5000)
         logger.info("Auto-redirected directly to a single store menu!")
         # Extract the store ID right out of the URL
         store_id = page.url.split("/stores/")[1].split("/")[0]
@@ -163,16 +170,13 @@ async def url_scraper(page, NUMBER_OF_STORES_TO_SCRAPE):
     store_list = page.get_by_test_id("locator__storeslist")
     await store_list.wait_for(state="visible", timeout=20000)
 
-    # 2. Now scroll to the bottom to trigger the lazy load
     await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
 
-    # 3. Wait for the background network requests to finish fetching the new stores
     try:
         await page.wait_for_load_state("networkidle", timeout=10000)
     except PlaywrightTimeoutError:
-        pass # Ignore timeout if networkidle takes too long, DOM is likely loaded anyway
+        pass
 
-    # 4. Now grab the stores
     ul_with_store_ids = await store_list.locator("li").all()
     logger.debug(f"Found {len(ul_with_store_ids)} stores near the given zip code")
 
@@ -202,7 +206,7 @@ async def url_scraper(page, NUMBER_OF_STORES_TO_SCRAPE):
 async def process_store_directly(browser, url_to_scrape, zip_code, address, store_id):
     logger.info(f"Worker launched for store {url_to_scrape}")
     context, page = None, None
-    raw_menu_items = []
+    raw_menu_items = {}
 
     try:
         context, page = await new_stealth_context(browser)
@@ -218,11 +222,15 @@ async def process_store_directly(browser, url_to_scrape, zip_code, address, stor
             await asyncio.wait_for(context.close(), timeout=1.0)
 
     if raw_menu_items:
-        return raw_menu_items
+        return {
+            "zip_and_address": f"{zip_code} | {address}",
+            "store_id": store_id,
+            "raw_menu_items": raw_menu_items
+        }
     
     else:
-        logger.warning(f"No matches found.")
-        return None
+        logger.warning(f"No matches found for {url_to_scrape}.")
+        return {}
 
 #To limit the number of concurrent scraping tasks so the server CPU usage is kept in check.
 scraper_semaphore = asyncio.Semaphore(NUM_SEMAPHORE)
@@ -233,7 +241,7 @@ async def process_store_safely(browser, url_to_scrape, zip_code, address, store_
         return await process_store_directly(browser, url_to_scrape, zip_code, address, store_id)
 
 #MAIN function that opens a browser to scrape multiple stores near a given zip_code.
-async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
+async def scrape_based_on_zip_code(website, zip_code):
     if not zip_code:
         logger.warning("You did not enter a zip code.")
         return []
@@ -244,7 +252,7 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
     logger.info("Opening chromium.")
 
     async with Stealth().use_async(async_playwright()) as p:
-        browser = await p.chromium.launch(headless=True, args=[
+        browser = await p.chromium.launch(headless=False, args=[
         '--disable-gpu',
         '--disable-dev-shm-usage',
         '--no-sandbox',
@@ -262,8 +270,19 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
             await asyncio.sleep(timeout_fast())
             await page.fill("//input[@type='text']", zip_code)
             dropdown_option = page.get_by_text(zip_code).first
-            await dropdown_option.wait_for(state="visible", timeout=10000)
-            await dropdown_option.first.click()
+            no_results_message = page.get_by_text("No Results Found").first
+
+            try:
+                await dropdown_option.wait_for(state="visible", timeout=8000)
+                await dropdown_option.first.click()
+
+            except PlaywrightTimeoutError:
+                if await no_results_message.is_visible():
+                    logger.warning("No results found for the given zip code.")
+                    raise ValueError("No results found for the given zip code.")
+                else:
+                    logger.warning("Dropdown timed out and no error message appeared.")
+                    raise ValueError("The website timed out while searching. Please try again later.")
 
             stores_to_scrape = await url_scraper(page, NUM_STORES_TO_SCRAPE)
             if not stores_to_scrape:
@@ -275,23 +294,18 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
 
             #only useful when check_if_in_db is True
             zip_and_addresses = []
-            store_ids = []
 
             if stores_to_scrape is not None:
                 for store in stores_to_scrape:
                     store_identifier = f"{store[0]} | {store[2]}"
-                    if check_if_in_db:
-                        fresh_entry = await ScrapedStore.objects.filter(zip_and_address__icontains=store_identifier, scraped_at__gte=timezone.now()-timedelta(days=7)).aexists()
-                        if fresh_entry:
-                            zip_and_addresses.append(store_identifier)
-                        else:
-                            await ScrapedStore.objects.filter(zip_and_address__icontains=store_identifier).adelete()
-                            tasks.append(process_store_safely(browser, store[1], store[0], store[2], store[3]))
-                            store_ids.append(store[3])
-                            zip_and_addresses.append(store_identifier)
+                    fresh_entry = await ScrapedStore.objects.filter(zip_and_address__icontains=store_identifier, scraped_at__gte=timezone.now()-timedelta(days=7)).aexists()
+                    if fresh_entry:
+                        zip_and_addresses.append(store_identifier)
                     else:
+                        await ScrapedStore.objects.filter(zip_and_address__icontains=store_identifier).adelete()
                         tasks.append(process_store_safely(browser, store[1], store[0], store[2], store[3]))
-                        store_ids.append(store[3])
+                        zip_and_addresses.append(store_identifier)
+
             else:
                 logger.warning("No stores to scrape.")
                 return []
@@ -306,14 +320,15 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
                 gc.collect()
                 logger.debug("Garbage collection completed after scraping tasks.")
 
-                await database_save(scrape_results, zip_and_addresses, store_ids)
+                await database_save(scrape_results)
 
                 if zip_and_addresses:
                     return zip_and_addresses
 
         except Exception as e:
             logger.exception(f"The task failed: {e}")
-            return []
+            raise e
+        
         finally:
             if page:
                 await asyncio.wait_for(page.close(), timeout=1.0)

@@ -55,7 +55,7 @@ def scraper_api(request):
     
         try:
 
-            locations_to_query = async_to_sync(script.scrape_based_on_zip_code)("https://littlecaesars.com/en-us/", target_zip, True)
+            locations_to_query = async_to_sync(script.scrape_based_on_zip_code)("https://littlecaesars.com/en-us/", target_zip)
 
             cache.set(f"scrape_count_{ip}", count + 1, timeout=86400)
 
@@ -69,9 +69,13 @@ def scraper_api(request):
                 "message": f"Successfully fetched {total_stores} stores.",
                 "results": scraped_items_list
             })
+        
+        except ValueError as e:
+            return JsonResponse({"error": str(e)}, status=400)
+
         except Exception as e:
-                logger.exception("Scraper failed") 
-                return JsonResponse({'error': str(e)}, status=500)
+            logger.exception("Scraper failed") 
+            return JsonResponse({'error': str(e)}, status=500)
 
     return JsonResponse({"error": "Method not allowed. Use POST."}, status=405)
 

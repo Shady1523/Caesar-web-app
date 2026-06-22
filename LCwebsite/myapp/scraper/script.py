@@ -235,7 +235,7 @@ async def process_store_directly(browser, url_to_scrape, zip_code, address, stor
 #HELPER function that wraps the actual scraping function and limits the number of concurrent tasks.
 async def process_store_safely(browser, url_to_scrape, zip_code, address, store_id, scraper_semaphore):
     async with scraper_semaphore:
-        return await process_store_directly(browser, url_to_scrape, zip_code, address, store_id, scraper_semaphore)
+        return await process_store_directly(browser, url_to_scrape, zip_code, address, store_id)
 
 #MAIN function that opens a browser to scrape multiple stores near a given zip_code.
 async def scrape_based_on_zip_code(website, zip_code):

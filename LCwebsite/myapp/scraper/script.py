@@ -268,7 +268,7 @@ async def scrape_based_on_zip_code(website, zip_code):
             context, page = await new_stealth_context(browser)
             await page.goto(f"{website}order/pickup/")
             await asyncio.sleep(timeout_fast())
-            await page.fill("//input[@type='text']", zip_code)
+            await page.get_by_test_id("locator__typeaheadAddr-input").fill(zip_code)
             dropdown_option = page.get_by_text(zip_code).first
             no_results_message = page.get_by_text("No Results Found").first
 

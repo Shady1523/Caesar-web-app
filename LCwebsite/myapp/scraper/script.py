@@ -161,14 +161,14 @@ async def url_scraper(page, NUMBER_OF_STORES_TO_SCRAPE):
         pass
 
     store_list = page.get_by_test_id("locator__storeslist")
-    await store_list.wait_for(state="visible", timeout=15000)
+    await store_list.wait_for(state="visible", timeout=20000)
 
     # 2. Now scroll to the bottom to trigger the lazy load
     await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
 
     # 3. Wait for the background network requests to finish fetching the new stores
     try:
-        await page.wait_for_load_state("networkidle", timeout=5000)
+        await page.wait_for_load_state("networkidle", timeout=10000)
     except PlaywrightTimeoutError:
         pass # Ignore timeout if networkidle takes too long, DOM is likely loaded anyway
 
@@ -236,10 +236,10 @@ async def process_store_safely(browser, url_to_scrape, zip_code, address, store_
 async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
     if not zip_code:
         logger.warning("You did not enter a zip code.")
-        return
+        return []
     elif len(zip_code) != 5:
         logger.warning("Invalid Zip Code.")
-        return
+        return []
 
     logger.info("Opening chromium.")
 
@@ -269,7 +269,7 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
             if not stores_to_scrape:
                 logger.warning("There are no urls to scrape.")
                 logger.warning("Unfortunately your area does not have any locations within a reasonable radius.")
-                return
+                return []
 
             tasks = []
 
@@ -294,7 +294,7 @@ async def scrape_based_on_zip_code(website, zip_code, check_if_in_db=False):
                         store_ids.append(store[3])
             else:
                 logger.warning("No stores to scrape.")
-                return
+                return []
             
             if zip_and_addresses and not tasks:
                 return zip_and_addresses

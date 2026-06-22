@@ -252,7 +252,7 @@ async def scrape_based_on_zip_code(website, zip_code):
     logger.info("Opening chromium.")
 
     async with Stealth().use_async(async_playwright()) as p:
-        browser = await p.chromium.launch(headless=False, args=[
+        browser = await p.chromium.launch(headless=True, args=[
         '--disable-gpu',
         '--disable-dev-shm-usage',
         '--no-sandbox',

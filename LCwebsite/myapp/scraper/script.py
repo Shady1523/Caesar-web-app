@@ -232,13 +232,10 @@ async def process_store_directly(browser, url_to_scrape, zip_code, address, stor
         logger.warning(f"No matches found for {url_to_scrape}.")
         return {}
 
-#To limit the number of concurrent scraping tasks so the server CPU usage is kept in check.
-scraper_semaphore = asyncio.Semaphore(NUM_SEMAPHORE)
-
 #HELPER function that wraps the actual scraping function and limits the number of concurrent tasks.
-async def process_store_safely(browser, url_to_scrape, zip_code, address, store_id):
+async def process_store_safely(browser, url_to_scrape, zip_code, address, store_id, scraper_semaphore):
     async with scraper_semaphore:
-        return await process_store_directly(browser, url_to_scrape, zip_code, address, store_id)
+        return await process_store_directly(browser, url_to_scrape, zip_code, address, store_id, scraper_semaphore)
 
 #MAIN function that opens a browser to scrape multiple stores near a given zip_code.
 async def scrape_based_on_zip_code(website, zip_code):
@@ -250,6 +247,9 @@ async def scrape_based_on_zip_code(website, zip_code):
         return []
 
     logger.info("Opening chromium.")
+
+    #To limit the number of concurrent scraping tasks so the server CPU usage is kept in check.
+    scraper_semaphore = asyncio.Semaphore(NUM_SEMAPHORE)
 
     async with Stealth().use_async(async_playwright()) as p:
         browser = await p.chromium.launch(headless=True, args=[
@@ -303,7 +303,7 @@ async def scrape_based_on_zip_code(website, zip_code):
                         zip_and_addresses.append(store_identifier)
                     else:
                         await ScrapedStore.objects.filter(zip_and_address__icontains=store_identifier).adelete()
-                        tasks.append(process_store_safely(browser, store[1], store[0], store[2], store[3]))
+                        tasks.append(process_store_safely(browser, store[1], store[0], store[2], store[3], scraper_semaphore))
                         zip_and_addresses.append(store_identifier)
 
             else:

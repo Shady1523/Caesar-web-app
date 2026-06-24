@@ -1,9 +1,4 @@
 services:
-  redis:
-    image: redis:latest
-    ports:
-      - "6379:6379"
-
   web:
     build: .
     ports:
@@ -16,9 +11,6 @@ services:
       - .:/app
     environment:
       - PYTHONUNBUFFERED=1
-      - CELERY_BROKER_URL=redis://redis:6379/0
-    depends_on:
-      - redis
     command: daphne -b 0.0.0.0 -p 8000 LCwebsite.asgi:application
     
   worker:
@@ -26,8 +18,5 @@ services:
     command: celery -A LCwebsite worker -l info
     env_file:
       - .env
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
     depends_on:
-      - redis
       - web

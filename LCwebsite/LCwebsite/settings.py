@@ -149,13 +149,17 @@ CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 
+ssl_context = ssl.create_default_context()
+ssl_context.check_hostname = False
+ssl_context.verify_mode = ssl.CERT_NONE
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")],
             "connection_kwargs": {
-                "ssl_cert_reqs": ssl.CERT_NONE,
+                "ssl": ssl_context,
             },
         },
     },

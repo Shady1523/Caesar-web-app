@@ -16,7 +16,6 @@ import dj_database_url
 from dotenv import load_dotenv
 from django.core.exceptions import ImproperlyConfigured
 import environ
-import ssl
 
 env = environ.Env()
 environ.Env.read_env()
@@ -149,15 +148,17 @@ CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 
-ssl_context = ssl.create_default_context()
-ssl_context.check_hostname = False
-ssl_context.verify_mode = ssl.CERT_NONE
-
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")],
+                "hosts": [{
+                "host": os.environ.get("REDIS_HOST"),
+                "port": int(os.environ.get("REDIS_PORT", 6380)),
+                "password": os.environ.get("REDIS_PASSWORD"),
+                "ssl": True,
+                "ssl_cert_reqs": None,
+            }],
         },
     },
 }

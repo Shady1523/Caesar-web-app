@@ -14,7 +14,7 @@ from pathlib import Path
 import os
 import dj_database_url
 from dotenv import load_dotenv
-from LCwebsite.LCwebsite.environ.compat import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured
 import environ
 import ssl
 

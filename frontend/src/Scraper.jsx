@@ -111,8 +111,10 @@ function Scraper() {
       setStatusMsg({ text: 'Scraping in background... Please wait.', type: "" });
 
       // Open the WebSocket connection
-      const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-      const wsUrl = `${protocol}${window.location.host}/ws/scrape/${taskId}/`;
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+      const wsBaseUrl = apiBaseUrl.replace(/^http/, 'ws'); 
+      const wsUrl = `${wsBaseUrl}/ws/scrape/${taskId}/`;
+      
       const ws = new WebSocket(wsUrl);
 
       // Wait for Celery to push the data

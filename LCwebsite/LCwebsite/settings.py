@@ -15,6 +15,7 @@ import os
 import dj_database_url
 from dotenv import load_dotenv
 import environ
+import ssl
 
 env = environ.Env()
 environ.Env.read_env()
@@ -149,6 +150,7 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")],
+            "ssl_cert_reqs": ssl.CERT_NONE,
         },
     },
 }

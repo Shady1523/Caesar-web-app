@@ -154,7 +154,9 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")],
-            "ssl_cert_reqs": ssl.CERT_NONE,
+            "connection_kwargs": {
+                "ssl_cert_reqs": ssl.CERT_NONE,
+            },
         },
     },
 }

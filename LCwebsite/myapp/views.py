@@ -9,6 +9,7 @@ from django.core.cache import cache
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 import logging
+from .tasks import run_pizza_scraper
 
 logger = logging.getLogger(__name__)
 
@@ -55,27 +56,22 @@ def scraper_api(request):
     
         try:
 
-            locations_to_query = async_to_sync(script.scrape_based_on_zip_code)("https://littlecaesars.com/en-us/", target_zip)
+            task = run_pizza_scraper.delay(target_zip)
 
             cache.set(f"scrape_count_{ip}", count + 1, timeout=86400)
 
-            scraped_items_queryset = ScrapedStore.objects.filter(zip_and_address__in=locations_to_query)
-            scraped_items_list = list(scraped_items_queryset.values('zip_and_address', 'item_name', 'item_price', 'item_cal', 'store_id'))
-            
-            total_stores = scraped_items_queryset.values('zip_and_address').distinct().count()
-
             return JsonResponse({
-                "status": "success",
-                "message": f"Successfully fetched {total_stores} stores.",
-                "results": scraped_items_list
-            })
+                "status": "pending",
+                "message": f"Scraping task started in the background.",
+                "task_id": task.id
+            }, status=202)
         
         except ValueError as e:
             return JsonResponse({"error": str(e)}, status=400)
 
         except Exception as e:
-            logger.exception("Scraper failed") 
-            return JsonResponse({'error': str(e)}, status=500)
+            logger.exception("Failed to start scraping task") 
+            return JsonResponse({'error': "Failed to start background task"}, status=500)
 
     return JsonResponse({"error": "Method not allowed. Use POST."}, status=405)
 

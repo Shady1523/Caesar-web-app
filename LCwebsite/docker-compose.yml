@@ -1,4 +1,9 @@
 services:
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
   web:
     build: .
     ports:
@@ -9,3 +14,16 @@ services:
       - .env
     volumes:
       - .:/app
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    
+    worker:
+    build: .
+    command: celery -A LCwebsite worker -l info
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - web

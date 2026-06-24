@@ -20,7 +20,6 @@ services:
       - redis
     
     worker:
-    build: .
     command: celery -A LCwebsite worker -l info
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0

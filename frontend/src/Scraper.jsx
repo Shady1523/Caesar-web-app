@@ -85,13 +85,15 @@ function Scraper() {
     refreshScrapeStatus();
   }, [refreshScrapeStatus]);
 
+// Scraping button logic
   const runScraper = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setStatusMsg({ text: "", type: "" });
+    setStatusMsg({ text: "Processing request...", type: "" });
     setLocalData([]);
 
     try {
+      // Get the receipt (Task ID)
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -104,27 +106,56 @@ function Scraper() {
         throw new Error(data.error || "Failed to scrape the area.");
       }
 
-      const newResults = data.results || [];
-      const successMsg = {
-        text: data.message || `Successfully scraped area ${zipCode}. Found ${newResults.length} items.`,
-        type: "success"
+      const taskId = data.task_id;
+      
+      setStatusMsg({ text: 'Scraping in background... Please wait.', type: "" });
+
+      // Open the WebSocket connection
+      const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+      const wsUrl = `${protocol}${window.location.host}/ws/scrape/${taskId}/`;
+      const ws = new WebSocket(wsUrl);
+
+      // Wait for Celery to push the data
+      ws.onmessage = (event) => {
+        const parsedData = JSON.parse(event.data);
+        
+        if (parsedData.data.error) {
+          setStatusMsg({ text: `Scraping failed: ${parsedData.data.error}`, type: "error" });
+        } else {
+  
+          const newResults = parsedData.data.results || [];
+          const successMsg = {
+            text: parsedData.data.message || `Successfully scraped area ${zipCode}. Found ${newResults.length} items.`,
+            type: "success"
+          };
+
+          setLocalData(newResults);
+          setStatusMsg(successMsg);
+
+          sessionStorage.setItem('scrapedData', JSON.stringify(newResults));
+          sessionStorage.setItem('lastZip', zipCode);
+          sessionStorage.setItem('statusMsg', JSON.stringify(successMsg));
+
+          // Re-check limit immediately after completion
+          refreshScrapeStatus();
+        }
+
+        // Stop the loading bar ONLY AFTER the data has arrived
+        setLoading(false);
+        ws.close();
       };
 
-      setLocalData(newResults);
-      setStatusMsg(successMsg);
-
-      sessionStorage.setItem('scrapedData', JSON.stringify(newResults));
-      sessionStorage.setItem('lastZip', zipCode);
-      sessionStorage.setItem('statusMsg', JSON.stringify(successMsg));
-
-      // Re-check limit after a successful scrape so the button
-      // disables immediately if the user just used their last scan
-      refreshScrapeStatus();
+      ws.onerror = (error) => {
+        console.error("WebSocket Error: ", error);
+        setStatusMsg({ text: "WebSocket connection failed.", type: "error" });
+        setLoading(false);
+        ws.close();
+      };
 
     } catch (error) {
       setStatusMsg({ text: error.message || "Error connecting to the scraper backend.", type: "error" });
-    } finally {
-      setLoading(false);
+      // Only stop the loading bar here if the initial HTTP handoff failed entirely
+      setLoading(false); 
     }
   };
 

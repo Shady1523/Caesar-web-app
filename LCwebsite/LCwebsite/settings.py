@@ -16,6 +16,7 @@ import dj_database_url
 from dotenv import load_dotenv
 from django.core.exceptions import ImproperlyConfigured
 import environ
+import ssl
 
 env = environ.Env()
 environ.Env.read_env()
@@ -143,18 +144,20 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
 CORS_ALLOW_CREDENTIALS = env.bool('CORS_ALLOW_CREDENTIALS', default=False)
 
 #Celery configuration
-CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_BROKER_URL")
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+CELERY_BROKER_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE}
+CELERY_REDIS_BACKEND_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE}
 
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-                "hosts": [{
-                "host": os.environ.get("REDIS_HOST"),
-                "port": int(os.environ.get("REDIS_PORT", 6380)),
+            "hosts": [{
+                "host": "welcomed-monitor-153162.upstash.io",
+                "port": 6379,
                 "password": os.environ.get("REDIS_PASSWORD"),
                 "ssl": True,
                 "ssl_cert_reqs": None,

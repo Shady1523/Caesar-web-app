@@ -9,12 +9,6 @@ services:
     ports:
       - "6379:6379"
 
-  flower:
-    image: mher/flower
-    ports:
-      - "5555:5555"
-    command: celery -A LCwebsite flower
-
   web:
     build: .
     ports:
@@ -25,6 +19,7 @@ services:
       - .env
     volumes:
       - .:/app
+      - ./redis_data:/data
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
@@ -39,3 +34,18 @@ services:
     depends_on:
       - redis
       - web
+  
+  flower:
+    build: .
+    container_name: flower
+    ports:
+      - "5555:5555"
+    command: celery -A LCwebsite flower --basic_auth=${FLOWER_USER}:${FLOWER_PASSWORD} --address=0.0.0.0
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - worker

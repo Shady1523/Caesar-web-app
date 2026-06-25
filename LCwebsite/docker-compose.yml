@@ -15,7 +15,7 @@ services:
     
   worker:
     build: .
-    command: celery -A LCwebsite worker -l info --uid nobody
+    command: celery -A LCwebsite worker -l info
     env_file:
       - .env
     depends_on:

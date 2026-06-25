@@ -9,7 +9,7 @@ from .models import ScrapedStore
 
 logger = logging.getLogger(__name__)
 
-@shared_task(bind=True)
+@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 3})
 def run_pizza_scraper(self, target_zip):
     try:
         locations_to_query = async_to_sync(script.scrape_based_on_zip_code)("https://littlecaesars.com/en-us/", target_zip)

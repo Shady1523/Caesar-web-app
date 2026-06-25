@@ -22,6 +22,13 @@ class ScraperConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+        message_type = data.get('type')
+
+        if message_type == 'ping':
+            await self.send(text_data=json.dumps({'type': 'pong'}))
+
     async def scrape_complete(self, event):
         message = event['message']
         data = event['data']

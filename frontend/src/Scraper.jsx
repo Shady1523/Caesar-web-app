@@ -7,6 +7,9 @@ function Scraper() {
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState({ text: "", type: "" });
   const [websiteLink, setWebsiteLink] = useState("");
+  
+  // --- WEBSOCKET STATE ---
+  const [lastPong, setLastPong] = useState(Date.now());
 
   // --- FILTER STATE ---
   const [filterLocation, setFilterLocation] = useState("");
@@ -87,79 +90,85 @@ function Scraper() {
 
 // Scraping button logic
   const runScraper = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setStatusMsg({ text: "Processing request...", type: "" });
-    setLocalData([]);
+  e.preventDefault();
+  setLoading(true);
+  setStatusMsg({ text: "Processing request...", type: "" });
+  setLocalData([]);
 
-    try {
-      // Get the receipt (Task ID)
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ zip_code: zipCode })
-      });
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ zip_code: zipCode })
+    });
 
-      const data = await response.json();
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Failed to scrape the area.");
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to scrape the area.");
+    const taskId = data.task_id;
+    setStatusMsg({ text: 'Scraping in background... Please wait.', type: "" });
+
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+    const wsBaseUrl = apiBaseUrl.replace(/^http/, 'ws'); 
+    const wsUrl = `${wsBaseUrl}/ws/scrape/${taskId}/`;
+    
+    const ws = new WebSocket(wsUrl);
+    let pingInterval;
+
+    ws.onopen = () => {
+      // Start the ping interval once connected
+      pingInterval = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'ping' }));
+        }
+      }, 30000);
+    };
+
+    ws.onmessage = (event) => {
+      const parsedData = JSON.parse(event.data);
+
+      // --- HEARTBEAT LOGIC ---
+      if (parsedData.type === 'pong') {
+        setLastPong(Date.now());
+        return;
+      }
+      // -----------------------
+
+      if (parsedData.data.error) {
+        setStatusMsg({ text: `Scraping failed: ${parsedData.data.error}`, type: "error" });
+      } else {
+        const newResults = parsedData.data.results || [];
+        const successMsg = {
+          text: parsedData.data.message || `Successfully scraped area ${zipCode}. Found ${newResults.length} items.`,
+          type: "success"
+        };
+
+        setLocalData(newResults);
+        setStatusMsg(successMsg);
+        sessionStorage.setItem('scrapedData', JSON.stringify(newResults));
+        sessionStorage.setItem('lastZip', zipCode);
+        sessionStorage.setItem('statusMsg', JSON.stringify(successMsg));
+        refreshScrapeStatus();
       }
 
-      const taskId = data.task_id;
-      
-      setStatusMsg({ text: 'Scraping in background... Please wait.', type: "" });
+      setLoading(false);
+      clearInterval(pingInterval);
+      ws.close();
+    };
 
-      // Open the WebSocket connection
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-      const wsBaseUrl = apiBaseUrl.replace(/^http/, 'ws'); 
-      const wsUrl = `${wsBaseUrl}/ws/scrape/${taskId}/`;
-      
-      const ws = new WebSocket(wsUrl);
+    ws.onerror = (error) => {
+      console.error("WebSocket Error: ", error);
+      setStatusMsg({ text: "WebSocket connection failed.", type: "error" });
+      setLoading(false);
+      clearInterval(pingInterval);
+      ws.close();
+    };
 
-      // Wait for Celery to push the data
-      ws.onmessage = (event) => {
-        const parsedData = JSON.parse(event.data);
-        
-        if (parsedData.data.error) {
-          setStatusMsg({ text: `Scraping failed: ${parsedData.data.error}`, type: "error" });
-        } else {
-  
-          const newResults = parsedData.data.results || [];
-          const successMsg = {
-            text: parsedData.data.message || `Successfully scraped area ${zipCode}. Found ${newResults.length} items.`,
-            type: "success"
-          };
-
-          setLocalData(newResults);
-          setStatusMsg(successMsg);
-
-          sessionStorage.setItem('scrapedData', JSON.stringify(newResults));
-          sessionStorage.setItem('lastZip', zipCode);
-          sessionStorage.setItem('statusMsg', JSON.stringify(successMsg));
-
-          // Re-check limit immediately after completion
-          refreshScrapeStatus();
-        }
-
-        // Stop the loading bar ONLY AFTER the data has arrived
-        setLoading(false);
-        ws.close();
-      };
-
-      ws.onerror = (error) => {
-        console.error("WebSocket Error: ", error);
-        setStatusMsg({ text: "WebSocket connection failed.", type: "error" });
-        setLoading(false);
-        ws.close();
-      };
-
-    } catch (error) {
-      setStatusMsg({ text: error.message || "Error connecting to the scraper backend.", type: "error" });
-      // Only stop the loading bar here if the initial HTTP handoff failed entirely
-      setLoading(false); 
-    }
-  };
+  } catch (error) {
+    setStatusMsg({ text: error.message || "Error connecting to the scraper backend.", type: "error" });
+    setLoading(false); 
+  }
+};
 
   // --- FILTERING LOGIC (applied before sorting and rendering) ---
   const filteredLocalData = localData.filter(item => {

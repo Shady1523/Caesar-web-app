@@ -1,8 +1,22 @@
 services:
   redis:
     image: redis:7-alpine
+    healthcheck:
+    test: ["CMD", "redis-cli", "ping"]
+    interval: 5s
+    timeout: 3s
+    retries: 5
+    depends_on:
+    web:
+      condition: service_healthy
     ports:
       - "6379:6379"
+
+  flower:
+    image: mher/flower
+    ports:
+      - "5555:5555"
+    command: celery -A LCwebsite flower
 
   web:
     build: .

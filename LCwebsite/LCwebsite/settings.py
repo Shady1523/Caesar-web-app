@@ -153,13 +153,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [{
-                "host": "welcomed-monitor-153162.upstash.io",
-                "port": 6379,
-                "password": os.environ.get("REDIS_PASSWORD"),
-                "ssl": True,
-                "ssl_cert_reqs": None,
-            }],
+            "hosts": [os.environ.get("CELERY_BROKER_URL")],
         },
     },
 }

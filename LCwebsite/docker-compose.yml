@@ -18,7 +18,7 @@ services:
       - PYTHONUNBUFFERED=1
     depends_on:
       - redis
-    command: daphne -b 0.0.0.0 -p 8000 LCwebsite.asgi:application
+    command: daphne -b 0.0.0.0 -p 8000 --websocket-timeout 60 LCwebsite.asgi:application
 
   worker:
     build: .

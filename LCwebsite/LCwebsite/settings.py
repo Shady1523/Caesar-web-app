@@ -149,9 +149,6 @@ CELERY_TASK_SERIALIZER = 'json'
 
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": ["redis://redis:6379/1"],
-        },
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
     },
 }

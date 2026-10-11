@@ -171,17 +171,17 @@ const handleRefresh = async () => {
 
   // --- RENDER HTML ---
   return (
-    <div className="min-h-screen bg-slate-50 p-8 font-sans overflow-x-hidden">
+    <div className="ops-page database-page min-h-screen bg-slate-50 p-8 font-sans overflow-x-hidden">
       <div className="max-w-6xl mx-auto">
         
         {/* HEADER */}
-        <div className="mb-6">
+        <div className="ops-intro mb-6">
           <h2 className="text-3xl font-bold text-slate-900">Pizza Database</h2>
           <p className="text-sm text-slate-500 mt-1">Filter and analyze menu items</p>
         </div>
 
         {/* THE FILTER PANEL */}
-        <div className="bg-orange-600 p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+        <div className="filter-panel bg-orange-600 p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
           <div className="flex justify-between items-center mb-4">  
             <h3 className="text-lg font-semibold text-black mb-4">Search Parameters</h3>
               <span className="text-sm font-medium text-black px-3 py-1 rounded-full italic">
@@ -240,7 +240,7 @@ const handleRefresh = async () => {
 
         </div>
             {/* THE DATA TABLE */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="data-panel bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead className="bg-orange-600 border-b border-black select-none">

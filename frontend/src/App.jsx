@@ -1,72 +1,132 @@
-import { useState } from 'react'; // Added useState
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import Dashboard from './Dashboard';
-import Scraper from './Scraper';
+import { useState } from "react";
+import { BrowserRouter, NavLink, Route, Routes } from "react-router-dom";
+import Dashboard from "./Dashboard";
+import Scraper from "./Scraper";
+
+const themes = [
+  { id: "slice", label: "Ember", color: "#f45a00" },
+  { id: "midnight", label: "Signal", color: "#5b7cfa" },
+  { id: "grove", label: "Grove", color: "#23856d" },
+];
+
+function BrandMark() {
+  return (
+    <span className="brand-mark" aria-hidden="true">
+      <span />
+      <span />
+      <span />
+    </span>
+  );
+}
+
+function NavIcon({ type }) {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="17"
+      viewBox="0 0 24 24"
+      width="17"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.8"
+    >
+      {type === "database" ? (
+        <>
+          <ellipse cx="12" cy="5" rx="8" ry="3" />
+          <path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6" />
+        </>
+      ) : (
+        <>
+          <path d="m5 7 4 4-4 4M12 17h7" />
+          <rect x="2" y="3" width="20" height="18" rx="3" />
+        </>
+      )}
+    </svg>
+  );
+}
 
 function App() {
-  // State to track if the mobile menu is open or closed
   const [isOpen, setIsOpen] = useState(false);
+  const [theme, setTheme] = useState("slice");
+  const navClass = ({ isActive }) => `nav-link${isActive ? " active" : ""}`;
 
   return (
     <BrowserRouter>
-      {/* The Navigation Bar */}
-      <div className="min-h-full">
-        <nav className="bg-orange-400">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex h-16 items-center justify-between">
+      <div className="app-shell" data-theme={theme}>
+        <header className="site-header">
+          <NavLink to="/" className="brand" aria-label="Market Scout home">
+            <BrandMark />
+            <span>
+              MARKET<span>SCOUT</span>
+            </span>
+          </NavLink>
 
-              <div className="flex items-center">
-                  <div className="shrink-0 text-orange-900 font-bold text-2xl">
-                    <h1>LCPIZZA TRACKER</h1>
-                  </div>
-                  <div className="hidden md:block">
-                    <div className="ml-10 flex items-baseline space-x-4">
-                      <Link to="/stores/" className="shadow hover:shadow-md bg-orange-500 rounded-md px-3 py-2 text-sm font-medium text-white hover:bg-orange-600 hover:text-white">DATABASE</Link>
-                      <Link to="/" className="shadow hover:shadow-md bg-orange-500 rounded-md px-3 py-2 text-sm font-medium text-white hover:bg-orange-600 hover:text-white">SCRAPER</Link>
-                    </div>
-                  </div>
-              </div>
+          <nav className="desktop-nav" aria-label="Primary navigation">
+            <NavLink to="/" className={navClass} end>
+              <NavIcon type="scraper" />
+              Scan runner
+            </NavLink>
+            <NavLink to="/stores/" className={navClass}>
+              <NavIcon type="database" />
+              Database
+            </NavLink>
+          </nav>
 
-              <div className="md:hidden">
-                <button 
-                  onClick={() => setIsOpen(!isOpen)} 
-                  className="text-white text-2xl font-bold p-2 focus:outline-none"
+          <div className="header-actions">
+            <div className="theme-switcher" aria-label="Choose visual theme">
+              {themes.map((item) => (
+                <button
+                  key={item.id}
+                  aria-label={`Use ${item.label} theme`}
+                  aria-pressed={theme === item.id}
+                  className={theme === item.id ? "selected" : ""}
+                  onClick={() => setTheme(item.id)}
+                  title={item.label}
                 >
-                  {isOpen ? '✕' : '☰'}
+                  <span style={{ background: item.color }} />
                 </button>
-              </div>
-
+              ))}
             </div>
+            <div className="system-status">
+              <i />
+              Live
+            </div>
+            <button
+              className="menu-button"
+              onClick={() => setIsOpen(!isOpen)}
+              aria-expanded={isOpen}
+              aria-label="Toggle navigation"
+            >
+              <span />
+              <span />
+            </button>
           </div>
+        </header>
 
-          {/* MOBILE DROPDOWN MENU - Only shows on mobile when button is clicked */}
-          {isOpen && (
-            <div className="md:hidden px-4 pb-4 pt-2 flex flex-col space-y-3 border-t border-orange-500">
-              <Link 
-                to="/stores/" 
-                onClick={() => setIsOpen(false)}
-                className="shadow hover:shadow-md bg-orange-500 rounded-md px-3 py-3 text-base font-medium text-white text-center hover:bg-orange-600 hover:text-white"
-              >
-                DATABASE
-              </Link>
-              <Link 
-                to="/" 
-                onClick={() => setIsOpen(false)}
-                className="shadow hover:shadow-md bg-orange-500 rounded-md px-3 py-3 text-base font-medium text-white text-center hover:bg-orange-600 hover:text-white"
-              >
-                SCRAPER
-              </Link>
-            </div>
-          )}
-        </nav>
-      </div>
+        {isOpen && (
+          <nav className="mobile-nav" aria-label="Mobile navigation">
+            <NavLink to="/" className={navClass} end onClick={() => setIsOpen(false)}>
+              <NavIcon type="scraper" />
+              Scan runner
+            </NavLink>
+            <NavLink to="/stores/" className={navClass} onClick={() => setIsOpen(false)}>
+              <NavIcon type="database" />
+              Database
+            </NavLink>
+          </nav>
+        )}
 
-      {/* The Dynamic Content Area */}
-      <div className="DynamicContent">
         <Routes>
           <Route path="/stores/" element={<Dashboard />} />
           <Route path="/" element={<Scraper />} />
         </Routes>
+
+        <footer className="site-footer">
+          <span>MARKET SCOUT / OPERATIONS SYSTEM</span>
+          <span>ALL SYSTEMS OPERATIONAL <i /></span>
+        </footer>
       </div>
     </BrowserRouter>
   );

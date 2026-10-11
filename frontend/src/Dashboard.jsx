@@ -232,7 +232,7 @@ const handleRefresh = async () => {
               {isLoading
                 ? "Loading data..."
                 : cacheHit
-                  ? "Loaded from cache · no database call made"
+                  ? ""
                   : "Loaded from database · results cached for this session"}
             </span>
           </div>

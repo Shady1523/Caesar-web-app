@@ -59,14 +59,14 @@ function App() {
           <NavLink to="/" className="brand" aria-label="Market Scout home">
             <BrandMark />
             <span>
-              MARKET<span>SCOUT</span>
+              LC<span>TRACKER</span>
             </span>
           </NavLink>
 
           <nav className="desktop-nav" aria-label="Primary navigation">
             <NavLink to="/" className={navClass} end>
               <NavIcon type="scraper" />
-              Scan runner
+              Run a Scan
             </NavLink>
             <NavLink to="/stores/" className={navClass}>
               <NavIcon type="database" />
@@ -91,7 +91,7 @@ function App() {
             </div>
             <div className="system-status">
               <i />
-              Live
+              Switch Theme
             </div>
             <button
               className="menu-button"
@@ -109,7 +109,7 @@ function App() {
           <nav className="mobile-nav" aria-label="Mobile navigation">
             <NavLink to="/" className={navClass} end onClick={() => setIsOpen(false)}>
               <NavIcon type="scraper" />
-              Scan runner
+              Run a Scan
             </NavLink>
             <NavLink to="/stores/" className={navClass} onClick={() => setIsOpen(false)}>
               <NavIcon type="database" />
@@ -124,8 +124,8 @@ function App() {
         </Routes>
 
         <footer className="site-footer">
-          <span>MARKET SCOUT / OPERATIONS SYSTEM</span>
-          <span>ALL SYSTEMS OPERATIONAL <i /></span>
+          <span>Built with Python's Django</span>
+          <span>Scripted with Playwright<i /></span>
         </footer>
       </div>
     </BrowserRouter>

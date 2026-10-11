@@ -1,7 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import AppLayout from "./components/layout/AppLayout";
-import Dashboard from "./pages/Dashboard";
-import Scraper from "./pages/Scraper";
+import AppLayout from "./components/layout/AppLayout.jsx";
+import Dashboard from "./pages/Dashboard.jsx";
+import Scraper from "./pages/Scraper.jsx";
 
 function App() {
   return (

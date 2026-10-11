@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { BrandMark, NavIcon } from "../icons/Icons";
+import { BrandMark, NavIcon } from "../icons/Icons.jsx";
 
 const themes = [
   { id: "slice", label: "Ember", color: "#f45a00" },

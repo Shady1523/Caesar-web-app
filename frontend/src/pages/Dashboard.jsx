@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useDataCache } from '../hooks/useDataCache';
-import FilterPanel from '../components/ui/FilterPanel';
-import DataTable from '../components/ui/DataTable';
+import { useDataCache } from '../hooks/useDataCache.js';
+import FilterPanel from '../components/ui/FilterPanel.jsx';
+import DataTable from '../components/ui/DataTable.jsx';
 
 export default function Dashboard() {
   const { allData, isLoading, cacheHit, statusMsg, handleRefresh } = useDataCache();
